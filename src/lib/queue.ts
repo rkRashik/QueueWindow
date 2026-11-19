@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   AppError,
+  defaultPreferences,
   allowedTransition,
   isActive,
   type Queue,
@@ -19,6 +20,7 @@ const commandSchema = z.object({
   action: z.enum([
     "issue",
     "call",
+    "recall",
     "start",
     "complete",
     "absent",
@@ -34,6 +36,15 @@ const commandSchema = z.object({
   name: z.string().trim().min(2).max(60).optional(),
   desk: z.string().trim().min(1).max(30).optional(),
   message: z.string().trim().max(140).optional(),
+  preferences: z
+    .object({
+      theme: z.enum(["midnight", "paper"]),
+      upcoming: z.number().int().min(0).max(4),
+      chime: z.boolean(),
+      printFooter: z.string().trim().max(100),
+      pauseMessage: z.string().trim().max(140),
+    })
+    .optional(),
 });
 type Result = { ticket?: Ticket; token?: string };
 const ticketFrom = (r: Row): Ticket => ({
@@ -47,6 +58,7 @@ function queueFrom(r?: Row): Queue {
   if (!r || (r.expires_at !== null && Number(r.expires_at) < Date.now()))
     throw new AppError("This queue has expired. Start a fresh demo.", 404);
   return {
+    preferences: defaultPreferences,
     id: String(r.id),
     name: String(r.name),
     desk: String(r.desk),
@@ -92,7 +104,29 @@ export async function queueSnapshot(db: Client, id: string): Promise<Snapshot> {
         args: [id],
       })
     ).rows.map(ticketFrom);
-    return { ...q, tickets, updatedAt: Date.now() };
+    const preference = (
+      await tx.execute({
+        sql: "SELECT value FROM queue_preferences WHERE queue_id=?",
+        args: [id],
+      })
+    ).rows[0];
+    if (preference) q.preferences = JSON.parse(String(preference.value));
+    const active = tickets.find((ticket) => isActive(ticket.state));
+    const timing = active
+      ? (
+          await tx.execute({
+            sql: "SELECT MAX(CASE WHEN action IN ('call','recall') THEN created_at END) AS called, MAX(CASE WHEN action='start' THEN created_at END) AS started FROM events WHERE queue_id=? AND ticket_id=?",
+            args: [id, active.id],
+          })
+        ).rows[0]
+      : undefined;
+    return {
+      ...q,
+      tickets,
+      updatedAt: Date.now(),
+      calledAt: timing?.called == null ? null : Number(timing.called),
+      startedAt: timing?.started == null ? null : Number(timing.started),
+    };
   } finally {
     tx.close();
   }
@@ -142,6 +176,7 @@ async function mutateQueueTransaction(
         409,
       );
     let result: Result = {};
+    let eventTicketId = c.ticketId;
     if (c.action === "issue") {
       if (q.paused)
         throw new AppError(
@@ -200,6 +235,11 @@ async function mutateQueueTransaction(
         sql: "UPDATE queues SET name=?,desk=?,message=? WHERE id=?",
         args: [c.name, c.desk, c.message, id],
       });
+      if (c.preferences)
+        await tx.execute({
+          sql: "INSERT INTO queue_preferences(queue_id,value) VALUES(?,?) ON CONFLICT(queue_id) DO UPDATE SET value=excluded.value",
+          args: [id, JSON.stringify(c.preferences)],
+        });
     } else if (c.action === "new-day") {
       const active = (
         await tx.execute({
@@ -221,7 +261,7 @@ async function mutateQueueTransaction(
         args: [id],
       });
     } else {
-      await transition(tx, id, c.action, c.ticketId);
+      eventTicketId = await transition(tx, id, c.action, c.ticketId);
     }
     await tx.execute({
       sql: "UPDATE queues SET version=version+1 WHERE id=?",
@@ -229,7 +269,12 @@ async function mutateQueueTransaction(
     });
     await tx.execute({
       sql: "INSERT INTO events(queue_id,action,ticket_id,created_at) VALUES(?,?,?,?)",
-      args: [id, c.action, c.ticketId || result.ticket?.id || null, Date.now()],
+      args: [
+        id,
+        c.action,
+        eventTicketId || result.ticket?.id || null,
+        Date.now(),
+      ],
     });
     await tx.execute({
       sql: "INSERT INTO commands(queue_id,key,payload_hash,result,created_at) VALUES(?,?,?,?,?)",
@@ -275,6 +320,7 @@ async function transition(
       })
     ).rows[0];
     const targets: Record<string, TicketState> = {
+      recall: "called",
       start: "serving",
       complete: "completed",
       absent: "absent",
@@ -283,6 +329,7 @@ async function transition(
     to = targets[action];
   }
   if (!row) throw new AppError("No matching ticket is available.", 404);
+  if (action === "recall" && row.state === "called") return String(row.id);
   if (!allowedTransition(row.state as TicketState, to))
     throw new AppError(
       "That ticket has already changed. Refresh the queue.",
@@ -297,6 +344,7 @@ async function transition(
       id,
     ],
   });
+  return String(row.id);
 }
 export async function visitorSnapshot(
   db: Client,
@@ -326,7 +374,10 @@ export async function visitorSnapshot(
   return {
     name: q.name,
     desk: q.desk,
-    message: q.message,
+    message:
+      q.paused && q.preferences.pauseMessage
+        ? q.preferences.pauseMessage
+        : q.message,
     paused: q.paused,
     ticket,
     ahead: q.tickets.filter(
@@ -356,10 +407,13 @@ export async function publicSnapshot(
   return {
     name: q.name,
     desk: q.desk,
-    message: q.message,
+    message: q.paused ? q.preferences.pauseMessage : "",
     paused: q.paused,
     current: current ? { number: current.number, state: current.state } : null,
-    upcoming: waiting.slice(0, 4).map((t) => t.number),
+    theme: q.preferences.theme,
+    chime: q.preferences.chime,
+    announcedAt: q.calledAt,
+    upcoming: waiting.slice(0, q.preferences.upcoming).map((t) => t.number),
     waiting: waiting.length,
     version: q.version,
     demo: q.demo,

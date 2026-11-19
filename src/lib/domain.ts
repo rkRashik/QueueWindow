@@ -7,7 +7,22 @@ export type Ticket = {
   issuedAt: number;
   finishedAt: number | null;
 };
+export type Preferences = {
+  theme: "midnight" | "paper";
+  upcoming: number;
+  chime: boolean;
+  printFooter: string;
+  pauseMessage: string;
+};
+export const defaultPreferences: Preferences = {
+  theme: "midnight",
+  upcoming: 4,
+  chime: false,
+  printFooter: "",
+  pauseMessage: "",
+};
 export type Queue = {
+  preferences: Preferences;
   id: string;
   name: string;
   desk: string;
@@ -18,7 +33,12 @@ export type Queue = {
   demo: boolean;
   expiresAt: number | null;
 };
-export type Snapshot = Queue & { tickets: Ticket[]; updatedAt: number };
+export type Snapshot = Queue & {
+  tickets: Ticket[];
+  updatedAt: number;
+  calledAt: number | null;
+  startedAt: number | null;
+};
 export type VisitorView = {
   name: string;
   desk: string;
@@ -31,11 +51,14 @@ export type VisitorView = {
   demo: boolean;
 };
 export type DisplayView = {
+  theme: Preferences["theme"];
+  chime: boolean;
   name: string;
   desk: string;
   message: string;
   paused: boolean;
   current: { number: number; state: TicketState } | null;
+  announcedAt: number | null;
   upcoming: number[];
   waiting: number;
   version: number;

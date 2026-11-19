@@ -124,6 +124,7 @@ export function Landing() {
   );
 }
 export function SignIn() {
+  const [visible, setVisible] = useState(false);
   const { busy, error, open } = useEntry();
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -145,13 +146,20 @@ export function SignIn() {
             Password
             <input
               name="password"
-              type="password"
+              type={visible ? "text" : "password"}
               required
               maxLength={200}
               autoComplete="current-password"
               aria-describedby={error ? "login-error" : undefined}
             />
           </label>
+          <button
+            className="plain passwordToggle"
+            type="button"
+            onClick={() => setVisible(!visible)}
+          >
+            {visible ? "Hide password" : "Show password"}
+          </button>
           {error && (
             <p id="login-error" className="feedback warn" role="alert">
               {error}

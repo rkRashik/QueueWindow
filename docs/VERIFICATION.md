@@ -14,3 +14,7 @@
 This is a sampled browser review, not a WCAG conformance claim. Native screen readers, physical touch devices, TV viewing distance, and real users have not been tested in this rebuild. Bangla localization is deferred. Hosted database behavior and Vercel deployment remain unverified.
 
 The backend, database schema, authentication, and queue rules were preserved. No deployment or push was performed. Old rejected frontend screenshots were removed.
+
+## Staff and display redesign
+
+Production build, typecheck, lint, 11 unit and database tests, and four Chromium journeys passed. Browser journeys exercised repeat calls on the public display, the service timer, and saving display preferences. The capture run covered 390, 768, 1440 and 1920 pixel widths with isolated demo data. Physical TV audio and screen-reader behavior still need hands-on review.

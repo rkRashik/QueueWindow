@@ -52,12 +52,21 @@ test("staff issue, visitor progress, public display, completion, and persistence
       .getAttribute("href"))!,
   );
   await expect(display.locator(".boardNumber")).toHaveText("A001");
+  const announcement = await display.locator(".boardNumber").elementHandle();
+  await press(page, "Call again").click();
+  await expect
+    .poll(() => announcement!.evaluate((node) => node.isConnected), {
+      timeout: 12000,
+    })
+    .toBe(false);
+  await expect(display.locator(".boardNumber")).toHaveText("A001");
   await press(page, "Start service").click();
+  await expect(page.getByText("Service time")).toBeVisible();
   await press(page, "Finish service").click();
   await expect(
     visitor.getByRole("heading", { name: "4 people ahead" }),
   ).toBeVisible({ timeout: 12000 });
-  await press(page, "Call next").click();
+  await press(page, "Call A002").click();
   await expect(display.locator(".boardNumber")).toHaveText("A002", {
     timeout: 12000,
   });
@@ -115,7 +124,20 @@ test("admission, cancellation, settings, offline recovery, and keyboard dialogs"
   await settingsButton.click();
   await settings.getByLabel("Business name").fill("দিগন্ত সেবা কেন্দ্র");
   await settings.getByLabel("Desk name").fill("কাউন্টার ২");
+  await settings.getByText("Display settings", { exact: true }).click();
+  await settings.getByLabel("Display theme").selectOption("paper");
+  await settings.getByLabel("Upcoming tickets").selectOption("2");
+  await expect(settings.locator(".displaySample")).toHaveAttribute(
+    "data-theme",
+    "paper",
+  );
   await press(page, "Save changes").click();
+  await expect
+    .poll(
+      async () =>
+        (await (await page.request.get("/api/queue")).json()).preferences.theme,
+    )
+    .toBe("paper");
   await expect(page.locator(".staffTop")).toContainText("দিগন্ত সেবা কেন্দ্র");
   await page.context().setOffline(true);
   await expect(

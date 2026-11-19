@@ -44,7 +44,7 @@ English-first service interface. White operational screens and a blue public dis
 
 ## Colors
 
-Blue identifies actions and ticket numbers. The public display uses a full blue field with white numbers. Green accompanies the explicit visitor message “It’s your turn.” Color never carries status alone.
+Blue identifies actions and ticket numbers. The public display uses a dark blue frame in Midnight or a light frame in Paper. A distinct call surface separates the active number from upcoming tickets. Green accompanies the explicit visitor message “It’s your turn.” Color never carries status alone.
 
 ## Typography
 
@@ -52,7 +52,7 @@ Manrope Variable is bundled locally. Ticket IDs remain consistent across staff, 
 
 ## Layout
 
-Staff work in one horizontal station: current status, ticket, and next action. Waiting tickets sit below it. At narrow widths the station becomes one column. The visitor has an open page rather than a paper-ticket card. The display separates the current call from upcoming tickets and sizes type for viewing at a distance.
+Staff see the waiting list on the left and the active ticket on the right. On phones the ticket comes first and the primary action stays within reach at the bottom. The visitor has an open page rather than a paper-ticket card. The display separates the current call from upcoming tickets and sizes type for viewing at a distance.
 
 ## Elevation & Depth
 

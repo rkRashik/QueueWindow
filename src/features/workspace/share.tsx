@@ -12,6 +12,7 @@ export function ShareTicket({
   token,
   name,
   counter,
+  footer,
   restore,
   onClose,
   onCancel,
@@ -20,6 +21,7 @@ export function ShareTicket({
   token: string;
   name: string;
   counter: string;
+  footer: string;
   restore: Element | null;
   onClose: () => void;
   onCancel?: () => void;
@@ -47,6 +49,7 @@ export function ShareTicket({
           <p>{name}</p>
           <Number value={ticket.number} />
           <p>{counter}</p>
+          {footer && <p>{footer}</p>}
         </div>
         {qr && (
           <Image

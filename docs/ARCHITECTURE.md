@@ -21,3 +21,7 @@ Public display IDs intentionally grant read-only access to ticket numbers, desk 
 ## Limits
 
 Five-second visible-page polling is not instantaneous delivery. Demo queues expire after a day and are cleaned on later demo creation; cleanup is lazy. A session is capped at 500 tickets. Owner history remains until starting a new day; audit and command retention need an operational cleanup policy before real use. Single shared owner credentials intentionally omit invitations, password recovery, and role management. Hosted credentials and deployment are not verified locally.
+
+## Counter timing and preferences
+
+The queue snapshot reads call, recall and service-start times from ticket events. Older active tickets without a matching call event show no call timer until called again. Display and print preferences use a queue-owned record with defaults for existing queues. Preference changes and repeat calls use the same versioned transactions as other staff actions.

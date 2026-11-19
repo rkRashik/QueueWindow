@@ -8,6 +8,7 @@ const schema = [
     next_number INTEGER NOT NULL DEFAULT 1, display_id TEXT NOT NULL UNIQUE,
     demo INTEGER NOT NULL CHECK(demo IN (0,1)), expires_at INTEGER, created_at INTEGER NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS queue_preferences (queue_id TEXT PRIMARY KEY REFERENCES queues(id) ON DELETE CASCADE, value TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS tickets (
     id TEXT PRIMARY KEY, queue_id TEXT NOT NULL REFERENCES queues(id) ON DELETE CASCADE,
     number INTEGER NOT NULL, state TEXT NOT NULL CHECK(state IN ('waiting','called','serving','completed','absent','cancelled')),

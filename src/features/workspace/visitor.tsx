@@ -95,11 +95,21 @@ function Ticket({ token }: { token: string | null }) {
         </div>
         {error && <Offline refresh={refresh} />}
         <section className="pass" data-called={called || undefined}>
-          <div className="journey" aria-hidden="true">
-            <span data-reached="true" />
-            <span data-reached={called || stage === "serving" || done} />
-            <span data-reached={done} />
-          </div>
+          {!["absent", "cancelled"].includes(stage) && (
+            <ol className="journey" aria-label="Ticket progress">
+              {(["waiting", "called", "serving", "completed"] as const).map(
+                (step, index, steps) => (
+                  <li
+                    key={step}
+                    aria-current={stage === step ? "step" : undefined}
+                    data-reached={steps.indexOf(stage as typeof step) >= index}
+                  >
+                    {["Waiting", "Called", "In service", "Done"][index]}
+                  </li>
+                ),
+              )}
+            </ol>
+          )}
           <div className="passNumber">
             <span>Your ticket</span>
             <Number value={pass.ticket.number} />
@@ -116,7 +126,7 @@ function Ticket({ token }: { token: string | null }) {
             ) : null}
           </div>
         </section>
-        {waiting && custom && <p className="visitorNote">{custom}</p>}
+        {waiting && (custom || pass.paused) && <p className="visitorNote">{custom || "New ticket issuance is paused."}</p>}
         <button className="plain visitorRefresh" onClick={refresh}>
           <RefreshCw size={18} aria-hidden="true" /> Refresh
         </button>

@@ -10,13 +10,14 @@ import {
   Plus,
   Settings2,
 } from "lucide-react";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { request, usePoll, HttpError } from "@/lib/client";
 import {
   isActive,
   isTerminal,
   ticketLabel,
   type Snapshot,
+  type Preferences,
   type Ticket,
 } from "@/lib/domain";
 import {
@@ -43,6 +44,7 @@ type Command = {
   name?: string;
   desk?: string;
   message?: string;
+  preferences?: Preferences;
 };
 type Pass = { ticket: Ticket; token: string };
 type Confirm = {
@@ -51,6 +53,20 @@ type Confirm = {
   description: string;
   ticketId?: string;
 };
+
+function Elapsed({ since }: { since: number }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const seconds = Math.max(0, Math.floor((now - since) / 1000));
+  return (
+    <time>
+      {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
+    </time>
+  );
+}
 
 export function Staff() {
   const router = useRouter();
@@ -68,6 +84,9 @@ export function Staff() {
     null,
   );
   const [settings, setSettings] = useState(false);
+  const [previewTheme, setPreviewTheme] =
+    useState<Preferences["theme"]>("midnight");
+  const [previewCount, setPreviewCount] = useState(4);
   const [history, setHistory] = useState(false);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
 
@@ -152,6 +171,13 @@ export function Staff() {
       name: String(form.get("name")),
       desk: String(form.get("desk")),
       message: String(form.get("message")),
+      preferences: {
+        theme: form.get("theme") === "paper" ? "paper" : "midnight",
+        upcoming: parseInt(String(form.get("upcoming")), 10),
+        chime: form.has("chime"),
+        printFooter: String(form.get("printFooter")),
+        pauseMessage: String(form.get("pauseMessage")),
+      },
     });
   }
 
@@ -187,7 +213,7 @@ export function Staff() {
   const nextLabel = {
     start: "Start service",
     complete: "Finish service",
-    call: "Call next",
+    call: waiting[0] ? "Call " + ticketLabel(waiting[0].number) : "Call next",
   }[nextAction];
   const blocked = busy || !!offline || !!retry;
   const feedback = (error || retry) && (
@@ -227,6 +253,8 @@ export function Staff() {
           aria-label="Settings"
           onClick={() => {
             setError("");
+            setPreviewTheme(queue.preferences.theme);
+            setPreviewCount(queue.preferences.upcoming);
             setSettings(true);
           }}
         >
@@ -245,7 +273,7 @@ export function Staff() {
             </h1>
           </div>
           <button
-            className="button"
+            className="plain issueButton"
             disabled={blocked || queue.paused}
             onClick={() => run("issue")}
           >
@@ -261,25 +289,49 @@ export function Staff() {
           <p className="feedback warn">Ticket issuance is paused.</p>
         )}
         <div className="deskGrid">
-          <section className="active" aria-labelledby="active-title">
+          <section
+            className="active"
+            data-state={current?.state}
+            aria-labelledby="active-title"
+          >
             <header>
               <h2 id="active-title">
                 <span className="dot" />
                 {current ? titleFor[current.state] : "Ready when you are"}
               </h2>
               <span>{desk(queue.desk)}</span>
+              {current?.state === "serving" && queue.startedAt && (
+                <span>
+                  Service time <Elapsed since={queue.startedAt} />
+                </span>
+              )}
+              {current?.state === "called" && queue.calledAt && (
+                <span>
+                  Called <Elapsed since={queue.calledAt} /> ago
+                </span>
+              )}
             </header>
             <div className="activeNumber" aria-live="polite">
-              <Number value={current?.number} />
+              <Number value={current?.number ?? waiting[0]?.number} />
             </div>
             <div className="actions">
               <button
-                className="button"
+                className="button primaryDeskAction"
                 onClick={() => run(nextAction, { ticketId: current?.id })}
                 disabled={blocked || (!current && waiting.length === 0)}
               >
-                {nextLabel} <ArrowRight size={20} aria-hidden="true" />
+                {busy ? "Updating..." : nextLabel}{" "}
+                <ArrowRight size={20} aria-hidden="true" />
               </button>
+              {current?.state === "called" && (
+                <button
+                  className="plain"
+                  disabled={blocked}
+                  onClick={() => run("recall", { ticketId: current.id })}
+                >
+                  Call again
+                </button>
+              )}
               {current?.state === "called" && (
                 <button
                   className="plain"
@@ -332,11 +384,15 @@ export function Staff() {
                         {ticketLabel(item.number)}
                       </span>
                       <span>
-                        {history
-                          ? titleFor[item.state]
-                          : index === 0
-                            ? "Up next"
-                            : ""}
+                        {history ? (
+                          titleFor[item.state]
+                        ) : index === 0 ? (
+                          <>
+                            Up next &middot; <Elapsed since={item.issuedAt} />
+                          </>
+                        ) : (
+                          <Elapsed since={item.issuedAt} />
+                        )}
                       </span>
                       <ChevronRight size={19} aria-hidden="true" />
                     </button>
@@ -359,6 +415,7 @@ export function Staff() {
           {...pass}
           name={business(queue.name)}
           counter={desk(queue.desk)}
+          footer={queue.preferences.printFooter}
           onClose={() => setPass(null)}
           onCancel={
             pass.ticket.state === "waiting" && !blocked
@@ -406,6 +463,77 @@ export function Staff() {
                 maxLength={140}
               />
             </label>
+            <details className="settingsMore">
+              <summary>Display settings</summary>
+              <div className="displaySample" data-theme={previewTheme}>
+                <span>Now calling</span>
+                <strong>A024 &rarr; {queue.desk}</strong>
+                {previewCount > 0 && (
+                  <span>
+                    Up next &middot;{" "}
+                    {Array.from({ length: previewCount }, (_, index) =>
+                      ticketLabel(25 + index),
+                    ).join("  ")}
+                  </span>
+                )}
+              </div>
+              <label>
+                Display theme
+                <select
+                  name="theme"
+                  value={previewTheme}
+                  onChange={(event) =>
+                    setPreviewTheme(
+                      event.target.value === "paper" ? "paper" : "midnight",
+                    )
+                  }
+                >
+                  <option value="midnight">Midnight</option>
+                  <option value="paper">Paper</option>
+                </select>
+              </label>
+              <label>
+                Upcoming tickets
+                <select
+                  name="upcoming"
+                  value={previewCount}
+                  onChange={(event) =>
+                    setPreviewCount(parseInt(event.target.value, 10))
+                  }
+                >
+                  {[0, 1, 2, 3, 4].map((n) => (
+                    <option key={n}>{n}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="checkbox">
+                <input
+                  type="checkbox"
+                  name="chime"
+                  defaultChecked={queue.preferences.chime}
+                />{" "}
+                Allow call chime
+              </label>
+            </details>
+            <details className="settingsMore">
+              <summary>Ticket and queue messages</summary>
+              <label>
+                Print footer
+                <input
+                  name="printFooter"
+                  defaultValue={queue.preferences.printFooter}
+                  maxLength={100}
+                />
+              </label>
+              <label>
+                Pause message
+                <input
+                  name="pauseMessage"
+                  defaultValue={queue.preferences.pauseMessage}
+                  maxLength={140}
+                />
+              </label>
+            </details>
             {feedback}
             <button className="button" disabled={blocked}>
               Save changes

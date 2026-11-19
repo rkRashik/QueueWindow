@@ -17,6 +17,14 @@ The interface is English-first. The homepage has an interactive queue preview; *
 
 For owner sign-in, copy `.env.example` to `.env.local`, generate `APP_SECRET`, and set `STAFF_PASSWORD_HASH`. Run `npm run password`, type a password of at least 12 characters on stdin, then end input (Ctrl+Z then Enter on Windows). Store the printed hash, not the password. Restart the server after changing environment variables.
 
+## Run the counter
+
+Open the staff demo, issue a ticket, and open its private link and **Public display** in separate tabs. When the counter is idle, **Call A002** (or the next ticket number shown) calls the next visitor. **Call again** re-announces the same ticket. **Start service** starts the elapsed service timer, and **Finish service** frees the counter.
+
+Under **Settings**, open **Display settings** to preview Midnight or Paper and choose how many upcoming tickets to show. For audio, save **Allow call chime**, then press **Call sound** on the display itself. Under **Ticket and queue messages**, set a print footer or a pause message. Pausing stops new ticket issuance while existing tickets can still be served.
+
+Use a local file database for development. A local production run also requires `APP_SECRET`. See [deployment](docs/DEPLOYMENT.md) for production configuration.
+
 ## Checks
 
 ```sh

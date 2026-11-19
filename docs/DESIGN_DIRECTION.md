@@ -1,9 +1,9 @@
 # Design direction
 
-The current build is English-first, with locally bundled Manrope, white operational screens, and a cobalt public display. Bangla is deferred by request. The previous cream/yellow visual system, tilted ticket preview, and Bengali font were removed.
+The staff desk pairs a waiting list with a focused active-ticket surface. Mobile keeps the primary action within reach at the bottom of the screen. The action names the actual next ticket, and elapsed time comes from server events.
 
-The staff workspace places status, current ticket, and the next action in one horizontal station. Waiting tickets appear below. The visitor page uses open space rather than a paper card. The public display gives the current ticket most of the screen and keeps upcoming tickets in a separate band.
+The public display has Midnight and Paper themes. Its ticket number, destination, and optionally visible upcoming tickets support viewing at a distance. Repeat calls replay the number reveal. Sound requires both the saved preference and a local opt-in on the display.
 
-The entry page contains an interactive display/visitor preview. Call next changes both views. CSS handles ticket announcements, press feedback, and dialog entry; reduced motion disables movement. No animation dependency was added.
+Visitor tickets show queue position or destination and a labelled sequence of states. The sign-in form supports password managers, paste, and password visibility. Reduced-motion preferences suppress animation.
 
-The implementation awaits the user's visual review. See [DESIGN.md](../DESIGN.md) for actual tokens and [verification](VERIFICATION.md) for evidence and limits.
+Business and visitor copy, print footer, pause message, theme, and upcoming-ticket count are configurable from staff settings. The display preview uses sample data.
