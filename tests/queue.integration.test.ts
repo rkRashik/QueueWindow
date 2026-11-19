@@ -157,10 +157,10 @@ describe.skipIf(!databaseUrl)("PostgreSQL queue and route integration", () => {
     ).toHaveLength(1);
     expect(
       await db.select().from(counters).where(eq(counters.orgId, demo.id)),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     expect(
       await db.select().from(tickets).where(eq(tickets.orgId, demo.id)),
-    ).toHaveLength(5);
+    ).toHaveLength(14);
     const cookie = responses[0].headers.getSetCookie()[0].split(";")[0];
     const { POST: addStaff } = await import("../src/app/api/admin/staff/route");
     expect(
@@ -583,5 +583,85 @@ describe.skipIf(!databaseUrl)("PostgreSQL queue and route integration", () => {
       }),
     );
     expect(walkin.status).toBe(402);
+  });
+
+  it("estimates waits from a recent median that ignores tickets left open", async () => {
+    const { organization, a } = await fixture();
+    const issue = (key: string) =>
+      issueTicket(db, organization.id, a.id, key, { source: "walkin" });
+    // Two ordinary services and one ticket a desk forgot for 45 minutes.
+    for (const [index, minutes] of [4, 6, 45].entries()) {
+      const served = await issue(`served-${index}`);
+      await db
+        .update(tickets)
+        .set({
+          status: "SERVED",
+          calledAt: sql`statement_timestamp() - make_interval(mins => ${minutes + 1})`,
+          firstCalledAt: sql`statement_timestamp() - make_interval(mins => ${minutes + 1})`,
+          completedAt: sql`statement_timestamp() - interval '1 minute'`,
+        })
+        .where(eq(tickets.id, served.id));
+    }
+    const idle = (await displaySnapshot(db, organization.slug)).counters.find(
+      (counter) => counter.id === a.id,
+    );
+    expect(idle).toMatchObject({ waitingCount: 0, estimatedWaitMinutes: 0 });
+
+    const waiting = await issue("waiting");
+    const one = (await displaySnapshot(db, organization.slug)).counters.find(
+      (counter) => counter.id === a.id,
+    );
+    // Median of the 4 and 6 minute services; the 45 minute outlier is excluded.
+    expect(one).toMatchObject({ waitingCount: 1, estimatedWaitMinutes: 5 });
+    expect(await visitorTicket(db, organization.id, waiting.id)).toMatchObject({
+      peopleAhead: 0,
+      estimatedWaitMinutes: 0,
+    });
+  });
+
+  it("resets a stale shared demo without touching real tenants", async () => {
+    const { freshDemo, demoSlug } = await import("../src/features/auth/demo");
+    const { organization, a } = await fixture();
+    const real = await issueTicket(db, organization.id, a.id, "real", {
+      source: "walkin",
+    });
+    await db
+      .update(tickets)
+      .set({ issuedAt: sql`statement_timestamp() - interval '50 minutes'` })
+      .where(eq(tickets.id, real.id));
+
+    const [demo] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.slug, demoSlug));
+    const [called] = await db
+      .update(tickets)
+      .set({ calledAt: sql`statement_timestamp() - interval '45 minutes'` })
+      .where(and(eq(tickets.orgId, demo.id), eq(tickets.status, "CALLED")))
+      .returning({ id: tickets.id });
+
+    await freshDemo(organization.slug);
+    await freshDemo(demoSlug);
+    const after = await db
+      .select({ id: tickets.id })
+      .from(tickets)
+      .where(eq(tickets.orgId, demo.id));
+    expect(after).toHaveLength(14);
+    expect(after.map((ticket) => ticket.id)).not.toContain(called.id);
+    const [kept] = await db
+      .select({ status: tickets.status })
+      .from(tickets)
+      .where(eq(tickets.id, real.id));
+    expect(kept.status).toBe("WAITING");
+
+    // A fresh demo is left alone.
+    await freshDemo(demoSlug);
+    const again = await db
+      .select({ id: tickets.id })
+      .from(tickets)
+      .where(eq(tickets.orgId, demo.id));
+    expect(again.map((ticket) => ticket.id).sort()).toEqual(
+      after.map((ticket) => ticket.id).sort(),
+    );
   });
 });

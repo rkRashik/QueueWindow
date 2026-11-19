@@ -74,7 +74,7 @@ export function AccessForm({ mode }: { mode: "login" | "signup" }) {
       action={endpoint}
       method="post"
       noValidate
-      className="mt-6 space-y-3.5"
+      className="mt-7 grid gap-4"
       onSubmit={submit}
     >
       {signup ? (
@@ -151,7 +151,7 @@ export function AccessForm({ mode }: { mode: "login" | "signup" }) {
           />
           <button
             type="button"
-            className="absolute inset-y-1 end-1 grid w-11 place-items-center rounded-md text-muted hover:bg-slate-100 hover:text-ink"
+            className="key key-quiet key-icon absolute inset-y-0 end-0 min-h-0"
             aria-label={passwordVisible ? "Hide password" : "Show password"}
             onClick={() => setPasswordVisible((visible) => !visible)}
           >
@@ -176,7 +176,7 @@ export function AccessForm({ mode }: { mode: "login" | "signup" }) {
       {error && (
         <p
           role="alert"
-          className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800"
+          className="notice font-bold"
         >
           {error}
         </p>
@@ -184,7 +184,7 @@ export function AccessForm({ mode }: { mode: "login" | "signup" }) {
       <button
         type="submit"
         disabled={pending}
-        className="btn btn-primary mt-2 min-h-12 w-full"
+        className="key key-primary mt-2 min-h-12 w-full text-base"
       >
         {pending ? (
           <LoaderCircle

@@ -46,6 +46,8 @@ test("keyboard users can operate the sign-in form and find submission feedback",
   await expect(
     page.getByRole("link", { name: "Skip to content" }),
   ).toBeFocused();
+  // Skip link, wordmark, header link, then the form.
+  await page.keyboard.press("Tab");
   await page.keyboard.press("Tab");
   await page.keyboard.press("Tab");
   const identifier = page.getByRole("textbox", { name: "Email or username" });

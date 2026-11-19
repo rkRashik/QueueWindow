@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { createContext, useContext, useId, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { Language } from "@/lib/i18n";
 import { useStoredChoice } from "@/lib/stored";
 
@@ -63,6 +62,12 @@ const en = {
   queueClear: "No one waiting",
   ahead: "ahead of you",
   soundOn: "Alerts on",
+  ready: "Ready for next",
+  closed: "Closed",
+  aboutMin: "about",
+  youreNext: "You’re next",
+  tapCounter: "Tap a counter to take a ticket.",
+  goTo: "Go to",
 };
 
 const bn: typeof en = {
@@ -123,6 +128,12 @@ const bn: typeof en = {
   queueClear: "কেউ অপেক্ষায় নেই",
   ahead: "আপনার আগে",
   soundOn: "অ্যালার্ট চালু",
+  ready: "পরবর্তীর জন্য প্রস্তুত",
+  closed: "বন্ধ",
+  aboutMin: "প্রায়",
+  youreNext: "এরপর আপনি",
+  tapCounter: "টিকিট নিতে একটি কাউন্টারে চাপুন।",
+  goTo: "যান",
 };
 
 const words = { bn, en };
@@ -152,13 +163,21 @@ export function usePublicLocale() {
   return { mode, setMode, language, t: words[language] };
 }
 
-/** Renders one language, or both stacked when the "Both" mode is chosen. */
-export function Dual({ en: english, bn: bangla }: { en: ReactNode; bn: ReactNode }) {
+/** Renders one language, or both (stacked, or inline with a divider) in "Both" mode. */
+export function Dual({
+  en: english,
+  bn: bangla,
+  inline = false,
+}: {
+  en: ReactNode;
+  bn: ReactNode;
+  inline?: boolean;
+}) {
   const { mode } = usePublicLocale();
   if (mode === "en") return <span lang="en">{english}</span>;
   if (mode === "bn") return <span lang="bn">{bangla}</span>;
   return (
-    <span className="dual">
+    <span className={inline ? "dual-inline" : "dual"}>
       <span lang="en">{english}</span>
       <span lang="bn" className="dual-sub">
         {bangla}
@@ -167,23 +186,14 @@ export function Dual({ en: english, bn: bangla }: { en: ReactNode; bn: ReactNode
   );
 }
 
-export function Tx({ k }: { k: keyof typeof en }) {
-  return <Dual en={en[k]} bn={bn[k]} />;
+export function Tx({ k, inline }: { k: keyof typeof en; inline?: boolean }) {
+  return <Dual en={en[k]} bn={bn[k]} inline={inline} />;
 }
 
-export function PublicLanguage({
-  variant = "light",
-}: {
-  variant?: "light" | "glass";
-}) {
+export function PublicLanguage({ className = "" }: { className?: string }) {
   const { mode, setMode, t } = usePublicLocale();
-  const pill = useId();
   return (
-    <div
-      className={`visitor-language ${variant === "glass" ? "visitor-language-glass" : ""}`}
-      role="group"
-      aria-label={t.language}
-    >
+    <div className={`seg ${className}`} role="group" aria-label={t.language}>
       {(
         [
           ["en", "EN"],
@@ -198,14 +208,7 @@ export function PublicLanguage({
           aria-pressed={code === mode}
           onClick={() => setMode(code)}
         >
-          {code === mode && (
-            <motion.span
-              layoutId={pill}
-              className="visitor-language-pill absolute inset-0 rounded-full"
-              transition={{ type: "spring", stiffness: 500, damping: 36 }}
-            />
-          )}
-          <span className="relative">{label}</span>
+          {label}
         </button>
       ))}
     </div>

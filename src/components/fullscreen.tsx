@@ -16,22 +16,17 @@ export function useFullscreen() {
   );
   const toggle = useCallback(() => {
     if (document.fullscreenElement) void document.exitFullscreen();
-    else
-      void document.documentElement
-        .requestFullscreen?.()
-        .catch(() => undefined);
+    else void document.documentElement.requestFullscreen?.().catch(() => undefined);
   }, []);
   return { active, toggle };
 }
 
 export function FullscreenToggle({
-  className = "btn btn-quiet min-h-9 px-2.5",
+  className = "key key-quiet key-sm key-icon",
   labels = { enter: "Enter fullscreen", exit: "Exit fullscreen" },
-  showLabel = false,
 }: {
   className?: string;
   labels?: { enter: string; exit: string };
-  showLabel?: boolean;
 }) {
   const { active, toggle } = useFullscreen();
   const label = active ? labels.exit : labels.enter;
@@ -45,8 +40,7 @@ export function FullscreenToggle({
       title={label}
       onClick={toggle}
     >
-      <Icon aria-hidden="true" className="size-4" />
-      {showLabel && <span>{label}</span>}
+      <Icon aria-hidden="true" />
     </button>
   );
 }

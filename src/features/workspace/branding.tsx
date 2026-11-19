@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { BadgeCheck, Building2, Link2, Paintbrush } from "lucide-react";
+import { Monitor, Printer, QrCode, Tablet } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { AdminHeading } from "./admin-ui";
 import { useMutation } from "./admin-data";
@@ -16,14 +16,7 @@ export type Branding = {
   logoUrl: string | null;
   plan: string;
 };
-const swatches = [
-  "#0F172A",
-  "#4F46E5",
-  "#0369A1",
-  "#047857",
-  "#BE123C",
-  "#A16207",
-];
+const swatches = ["#1B2231", "#1F4FA8", "#17694F", "#8E2B22", "#8A5A12", "#6B2C68"];
 
 function validLogo(value: string) {
   if (!URL.canParse(value)) return false;
@@ -35,7 +28,7 @@ function Logo({ url }: { url: string }) {
   const [failed, setFailed] = useState(false);
   const { t } = useLocale();
   return failed ? (
-    <span className="text-xs font-bold text-muted">{t.logoUnavailable}</span>
+    <span className="muted text-sm font-semibold">{t.logoUnavailable}</span>
   ) : (
     <Image
       src={url}
@@ -45,7 +38,7 @@ function Logo({ url }: { url: string }) {
       alt=""
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
-      className="size-12 shrink-0 rounded-lg border border-line bg-white object-contain"
+      className="venue-mark"
     />
   );
 }
@@ -70,7 +63,7 @@ export function BrandingSection({
   const [logo, setLogo] = useState(branding.logoUrl ?? "");
   const [validationError, setValidationError] = useState(false);
   const validColor = /^#[0-9a-f]{6}$/i.test(color);
-  const previewColor = validColor ? color : "#0F172A";
+  const previewColor = validColor ? color : "#1B2231";
   const expiry = new Intl.DateTimeFormat(language, {
     dateStyle: "long",
     timeZone: "Asia/Dhaka",
@@ -101,183 +94,124 @@ export function BrandingSection({
     });
   }
 
+  const plan =
+    branding.plan === "FREE"
+      ? { name: t.free, detail: t.freeDetail }
+      : branding.plan === "TRIAL"
+        ? { name: t.trial, detail: `${t.trialEnds} ${expiry}` }
+        : branding.plan === "DEMO"
+          ? { name: t.liveDemo, detail: t.demoReadOnly }
+          : { name: branding.plan, detail: `${t.expiration} ${expiry}` };
+
   return (
     <>
       <AdminHeading title={t.branding} description={t.brandingDetail} />
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-        <section className="panel" aria-labelledby="branding-title">
-          <div className="eyeline flex items-center gap-2.5 px-5 py-4">
-            <Paintbrush aria-hidden="true" className="size-4 text-brand" />
-            <h2 className="section-heading" id="branding-title">
-              {t.branding}
-            </h2>
-          </div>
-          <form className="space-y-4 p-5" onSubmit={submit}>
+      <div className="admin-split">
+        <section aria-labelledby="branding-title">
+          <h2 id="branding-title" className="admin-sub">
+            {t.identity}
+          </h2>
+          <form className="grid gap-5" onSubmit={submit}>
             <InputField
-              name="name"
               label={t.organization}
+              name="name"
+              value={name}
               maxLength={100}
               required
-              value={name}
               onChange={(event) => setName(event.target.value)}
             />
-            <div>
-              <InputField
-                name="primaryColor"
-                label={t.primaryColor}
-                value={color}
-                maxLength={7}
-                required
-                onChange={(event) => setColor(event.target.value)}
-              />
-              <div
-                role="group"
-                aria-label={t.primaryColor}
-                className="mt-2 flex flex-wrap gap-1"
-              >
+            <fieldset>
+              <legend className="field-label">{t.primaryColor}</legend>
+              <div className="flex flex-wrap items-center gap-2">
                 {swatches.map((swatch) => (
                   <button
                     key={swatch}
                     type="button"
-                    aria-label={swatch}
+                    className="swatch"
                     aria-pressed={swatch === color.toUpperCase()}
-                    className={`grid size-10 place-items-center rounded-lg border ${swatch === color.toUpperCase() ? "border-brand bg-teal-50" : "border-transparent hover:bg-slate-100"}`}
+                    aria-label={swatch}
+                    style={{ background: swatch }}
                     onClick={() => setColor(swatch)}
-                  >
-                    <span
-                      style={{ backgroundColor: swatch }}
-                      className="size-5 rounded-full"
-                    />
-                  </button>
+                  />
                 ))}
+                <input
+                  className="field sign w-32 text-base uppercase"
+                  aria-label={t.primaryColor}
+                  value={color}
+                  maxLength={7}
+                  onChange={(event) => setColor(event.target.value)}
+                />
               </div>
-            </div>
+            </fieldset>
             <InputField
-              name="logoUrl"
               label={t.logoUrl}
+              name="logoUrl"
               type="url"
+              inputMode="url"
               placeholder="https://"
               value={logo}
               onChange={(event) => setLogo(event.target.value)}
-              maxLength={2048}
             />
-            <div
-              role="group"
-              aria-label={t.preview}
-              className="flex items-center gap-3 rounded-xl border border-line bg-slate-50 p-3.5"
-            >
-              {validLogo(logo.trim()) ? (
-                <Logo key={logo.trim()} url={logo.trim()} />
+            <div className="admin-preview" aria-label={t.preview}>
+              {logo && validLogo(logo.trim()) ? (
+                <Logo key={logo} url={logo.trim()} />
               ) : (
-                <span className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-white">
-                  <Building2
-                    aria-hidden="true"
-                    className="size-5"
-                    style={{ color: previewColor }}
-                  />
+                <span className="venue-mark" style={{ background: previewColor }} aria-hidden="true">
+                  {Array.from(name.trim())[0]?.toUpperCase() ?? "Q"}
                 </span>
               )}
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-muted">{t.preview}</p>
-                <p className="break-words font-extrabold">
-                  {name || branding.name}
-                </p>
-              </div>
-              <span
-                className="ms-auto size-4 shrink-0 rounded-full"
-                style={{ backgroundColor: previewColor }}
-                aria-hidden="true"
-              />
+              <span className="sign text-xl font-semibold break-words">{name || "—"}</span>
             </div>
-            {(validationError || mutation.error) && (
-              <Notice
-                title={validationError ? t.brandingInvalid : mutation.error}
-                tone="error"
-              />
-            )}
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={mutation.busy}
-            >
-              {mutation.busy ? t.saving : t.save}
-            </button>
+            {validationError && <Notice title={t.brandingInvalid} tone="error" />}
+            {mutation.error && <Notice title={mutation.error} tone="error" />}
+            <div>
+              <button type="submit" className="key key-primary" disabled={mutation.busy}>
+                {mutation.busy ? t.saving : t.save}
+              </button>
+            </div>
           </form>
         </section>
-        <div className="grid gap-5">
-          <section className="panel" aria-labelledby="subscription-title">
-            <div className="eyeline flex items-center gap-2.5 px-5 py-4">
-              <BadgeCheck aria-hidden="true" className="size-4 text-brand" />
-              <h2 id="subscription-title" className="section-heading">
-                {t.subscription}
-              </h2>
-            </div>
-            <dl className="divide-y divide-slate-100 px-5">
-              <div className="flex flex-wrap items-center justify-between gap-2 py-4">
-                <dt className="text-sm font-bold text-muted">{t.plan}</dt>
-                <dd className="rounded-md bg-teal-50 px-2.5 py-1 text-xs font-extrabold text-teal-800">
-                  {branding.plan === "TRIAL" ? t.trial : branding.plan}
-                </dd>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-2 py-4">
-                <dt className="text-sm font-bold text-muted">{t.expiration}</dt>
-                <dd className="text-sm font-extrabold tabular-nums">
-                  <time dateTime={expiresAt}>{expiry}</time>
-                </dd>
-              </div>
-            </dl>
+
+        <div className="grid content-start gap-10">
+          <section aria-labelledby="plan-title">
+            <h2 id="plan-title" className="admin-sub">
+              {t.plan}
+            </h2>
+            <p className="sign text-3xl font-semibold">{plan.name}</p>
+            <p className="muted mt-1">{plan.detail}</p>
           </section>
-          <section className="panel" aria-labelledby="links-title">
-            <div className="eyeline flex items-center gap-2.5 px-5 py-4">
-              <Link2 aria-hidden="true" className="size-4 text-brand" />
-              <h2 id="links-title" className="section-heading">
-                {t.links}
-              </h2>
-            </div>
-            <div className="space-y-4 p-5">
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  className="btn"
-                  href={`/print/${slug}/qr`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t.printQr}
-                </Link>
-                <Link
-                  className="btn"
-                  href={`/kiosk/${slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t.kiosk}
-                </Link>
-              </div>
-              {[
-                [t.tv, `/display/${slug}`],
-                [t.visitorLink, `/join/${slug}`],
-              ].map(([label, href]) => (
-                <div
-                  key={href}
-                  className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2"
-                >
-                  <label className="min-w-0 text-sm font-bold">
-                    {label}
-                    <input
-                      className="field mt-1.5 text-sm"
-                      readOnly
-                      value={href}
-                      onFocus={(event) => event.target.select()}
-                    />
-                  </label>
+
+          <section aria-labelledby="links-title">
+            <h2 id="links-title" className="admin-sub">
+              {t.links}
+            </h2>
+            <ul className="admin-links">
+              {(
+                [
+                  [t.tv, `/display/${slug}`, Monitor],
+                  [t.visitorLink, `/join/${slug}`, QrCode],
+                  [t.kiosk, `/kiosk/${slug}`, Tablet],
+                  [t.printQr, `/print/${slug}/qr`, Printer],
+                ] as const
+              ).map(([label, href, Icon]) => (
+                <li key={href}>
+                  <Icon aria-hidden="true" />
+                  <span className="min-w-0">
+                    <Link className="font-bold underline-offset-4 hover:underline" href={href} target="_blank" rel="noreferrer">
+                      {label}
+                    </Link>
+                    <span className="muted block truncate text-sm" translate="no">
+                      {href}
+                    </span>
+                  </span>
                   <CopyButton
                     label={t.copy}
                     value={() => new URL(href, location.origin).href}
                     notify={notify}
                   />
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
         </div>
       </div>

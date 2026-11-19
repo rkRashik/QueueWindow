@@ -14,10 +14,10 @@ export function AdminHeading({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="admin-heading">
       <div className="min-w-0">
-        <h1 className="page-heading">{title}</h1>
-        <p className="mt-2 text-sm text-muted">{description}</p>
+        <h1 className="sign admin-title">{title}</h1>
+        <p className="muted mt-1">{description}</p>
       </div>
       {action}
     </div>
@@ -37,14 +37,14 @@ export function ResourceNotice({
   if (error)
     return (
       <Notice title={language === "en" ? error : t.error} tone="error">
-        <button className="btn mt-2" type="button" onClick={load}>
+        <button className="key key-sm mt-2" type="button" onClick={load}>
           {t.retry}
         </button>
       </Notice>
     );
   if (loading)
     return (
-      <p role="status" className="panel p-6 text-sm text-muted">
+      <p role="status" className="muted py-6">
         {t.loading}
       </p>
     );

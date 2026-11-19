@@ -1,16 +1,15 @@
 "use client";
 
-export default function ErrorPage({ reset }: { reset: () => void }) {
+export default function ErrorPage({ reset }: { error: Error; reset: () => void }) {
   return (
-    <main id="main" className="mx-auto max-w-lg px-6 py-20">
-      <h1 className="text-3xl font-bold">Something went wrong</h1>
-      <button
-        type="button"
-        className="mt-5 min-h-11 rounded-md bg-brand px-4 font-semibold text-white"
-        onClick={reset}
-      >
-        Try again
-      </button>
+    <main id="main" className="access-body min-h-dvh">
+      <h1 className="sign text-4xl font-bold">Something went wrong</h1>
+      <p className="muted mt-2">The page couldn’t load. Your queue data is safe.</p>
+      <div className="mt-6">
+        <button type="button" className="key key-primary" onClick={reset}>
+          Try again
+        </button>
+      </div>
     </main>
   );
 }

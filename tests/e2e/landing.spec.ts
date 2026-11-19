@@ -1,39 +1,20 @@
 import { expect, test } from "@playwright/test";
 
-test("the laptop hero shows the full interactive queue preview", async ({
-  page,
-}) => {
+test("the laptop hero shows the live board and one clear path", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto("/");
 
-  const preview = page.getByRole("region", {
-    name: "Three screens, one queue",
-  });
-  await expect(preview).toBeInViewport({ ratio: 1 });
-
-  const advance = preview.getByRole("button", { name: "Call next in preview" });
-  await expect(
-    preview.getByText("3 ahead of you", { exact: true }),
-  ).toBeVisible();
-  for (const nextStatus of [
-    "2 ahead of you",
-    "1 ahead of you",
-    "It’s your turn",
-  ]) {
-    await advance.click();
-    await expect(preview.getByText(nextStatus, { exact: true })).toBeVisible();
-  }
-  await expect(
-    preview
-      .getByRole("article")
-      .filter({ hasText: "Waiting room TV" })
-      .getByText("A-10", { exact: true }),
-  ).toBeVisible();
+  const board = page.getByRole("img", { name: /Preview of the waiting-room board/ });
+  await expect(board).toBeInViewport({ ratio: 1 });
+  const main = page.getByRole("main");
+  await expect(main.getByRole("button", { name: "Open live demo" })).toBeInViewport();
+  await expect(page.getByRole("link", { name: "Create workspace" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Log in" }).first()).toBeVisible();
+  // Free product: no trial or paywall copy anywhere on the page.
+  await expect(page.locator("body")).not.toContainText(/trial|upgrade|pricing/i);
 });
 
-test("a failed demo request keeps the CTAs together at 320px", async ({
-  page,
-}) => {
+test("a failed demo request explains itself without breaking a 320px layout", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 768 });
   await page.goto("/");
   await page.evaluate(() => document.fonts.ready);
@@ -42,24 +23,12 @@ test("a failed demo request keeps the CTAs together at 320px", async ({
   );
 
   const main = page.getByRole("main");
-  const demo = main.getByRole("button", { name: "Try Live Demo" });
-  const trial = main.getByRole("link", { name: "Start Free Trial" });
-  const before = (await trial.boundingBox())!;
-
+  const demo = main.getByRole("button", { name: "Open live demo" });
   await demo.click();
   const error = main.getByRole("alert");
   await expect(error).toBeVisible();
-
-  const [demoBox, trialBox, errorBox] = await Promise.all([
-    demo.boundingBox(),
-    trial.boundingBox(),
-    error.boundingBox(),
-  ]);
-  expect(trialBox!.x).toBe(before.x);
-  expect(trialBox!.x - (demoBox!.x + demoBox!.width)).toBeCloseTo(12);
-  expect(trialBox!.y).toBe(demoBox!.y);
+  const [demoBox, errorBox] = await Promise.all([demo.boundingBox(), error.boundingBox()]);
   expect(errorBox!.y).toBeGreaterThanOrEqual(demoBox!.y + demoBox!.height);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
-    320,
-  );
+  await expect(demo).toBeEnabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
 });

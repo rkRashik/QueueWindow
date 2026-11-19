@@ -1,43 +1,51 @@
-import type { Metadata } from "next";
-import { Fraunces, Hind_Siliguri, Plus_Jakarta_Sans } from "next/font/google";
-import { MotionProvider } from "./motion-provider";
+import type { Metadata, Viewport } from "next";
+import {
+  Anek_Bangla,
+  Atkinson_Hyperlegible_Next,
+  Barlow_Semi_Condensed,
+} from "next/font/google";
 import "./globals.css";
 
-const latin = Plus_Jakarta_Sans({
+const text = Atkinson_Hyperlegible_Next({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-jakarta",
+  variable: "--font-text",
 });
-const display = Fraunces({
+const sign = Barlow_Semi_Condensed({
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
   display: "swap",
-  variable: "--font-fraunces",
+  variable: "--font-sign-latin",
 });
-const bengali = Hind_Siliguri({
+const bangla = Anek_Bangla({
   subsets: ["bengali"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
+  axes: ["wdth"],
   preload: false,
-  variable: "--font-bengali",
+  variable: "--font-bangla",
 });
 
 export const metadata: Metadata = {
-  title: { default: "QueueWindow", template: "%s | QueueWindow" },
-  description: "Manage your organization's service queue.",
+  title: { default: "QueueWindow", template: "%s · QueueWindow" },
+  description: "Service queues for desks, waiting rooms and phones.",
   robots: { index: false, follow: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f7f5ef",
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${latin.variable} ${bengali.variable} ${display.variable}`}>
-      <body className="min-h-dvh bg-paper text-ink antialiased">
-        <a
-          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-white focus:p-3"
-          href="#main"
-        >
+    <html
+      lang="en"
+      className={`${text.variable} ${sign.variable} ${bangla.variable}`}
+    >
+      <body>
+        <a className="skip-link" href="#main">
           Skip to content
         </a>
-        <MotionProvider>{children}</MotionProvider>
+        {children}
       </body>
     </html>
   );

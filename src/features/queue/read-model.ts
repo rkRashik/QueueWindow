@@ -1,10 +1,20 @@
-import { and, asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, sql, type SQL } from "drizzle-orm";
 import type { Database } from "@/db";
 import { counters, tickets } from "@/db/schema";
+import { serviceSampleSeconds } from "./rules";
 import { counterMissing, ticketFields, ticketScope, today } from "./store";
 
 const waitSeconds = sql`extract(epoch from (${tickets.firstCalledAt} - ${tickets.issuedAt}))`;
 export const serviceSeconds = sql`extract(epoch from (${tickets.completedAt} - ${tickets.firstCalledAt}))`;
+
+/**
+ * Median service time of the counter's last 20 plausible services today.
+ * A median over a recent window resists the long "served" spans that appear when a
+ * desk leaves a ticket open and only closes it by calling the next one.
+ */
+export function typicalService(scope: SQL | undefined) {
+  return sql<number | null>`(select percentile_cont(0.5) within group (order by recent.seconds)::float8 from (select ${serviceSeconds} as seconds from ${tickets} where ${scope} and ${tickets.businessDate} = ${today} and ${tickets.status} = 'SERVED' and ${serviceSeconds} between ${serviceSampleSeconds.min} and ${serviceSampleSeconds.max} order by ${tickets.completedAt} desc limit 20) recent)`;
+}
 
 const aggregateFields = {
   issued: count(tickets.id),
@@ -123,6 +133,7 @@ export function deskState(db: Database, orgId: string, selectedId?: string) {
           calledTicket: null,
           waitingTickets: [],
           stats: null,
+          typicalServiceSeconds: null,
         };
       }
       const scope = ticketScope(orgId, selected.id);
@@ -136,6 +147,9 @@ export function deskState(db: Database, orgId: string, selectedId?: string) {
         .select(aggregateFields)
         .from(tickets)
         .where(and(scope, eq(tickets.businessDate, today)));
+      const [typical] = await tx
+        .select({ seconds: typicalService(scope) })
+        .from(sql`(select 1) as one`);
       return {
         counters: available,
         selectedCounterId: selected.id,
@@ -143,6 +157,7 @@ export function deskState(db: Database, orgId: string, selectedId?: string) {
           queue.find((ticket) => ticket.status === "CALLED") ?? null,
         waitingTickets: queue.filter((ticket) => ticket.status === "WAITING"),
         stats: stats(day),
+        typicalServiceSeconds: typical.seconds,
       };
     },
     { isolationLevel: "repeatable read", accessMode: "read only" },

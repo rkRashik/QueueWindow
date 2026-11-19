@@ -2,14 +2,14 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <main id="main" className="mx-auto max-w-lg px-6 py-20">
-      <h1 className="text-3xl font-bold">Page not found</h1>
-      <Link
-        href="/"
-        className="mt-5 inline-block text-brand underline underline-offset-4"
-      >
-        Return to QueueWindow
-      </Link>
+    <main id="main" className="access-body min-h-dvh">
+      <h1 className="sign text-4xl font-bold">Page not found</h1>
+      <p className="muted mt-2">This queue, ticket or page doesn’t exist.</p>
+      <div className="mt-6">
+        <Link className="key" href="/">
+          Go to QueueWindow
+        </Link>
+      </div>
     </main>
   );
 }

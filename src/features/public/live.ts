@@ -24,8 +24,12 @@ function subscribe(change: () => void) {
   };
 }
 
-export function usePublicFeed(slug: string, onSnapshot?: (snapshot: DisplayData) => void) {
-  const [data, setData] = useState<DisplayData | null>(null);
+export function usePublicFeed(
+  slug: string,
+  onSnapshot?: (snapshot: DisplayData) => void,
+  initial: DisplayData | null = null,
+) {
+  const [data, setData] = useState<DisplayData | null>(initial);
   const [error, setError] = useState<number | null>(null);
   const [reconnecting, setReconnecting] = useState(false);
   const online = useSyncExternalStore(

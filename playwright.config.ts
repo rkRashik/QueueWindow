@@ -1,4 +1,7 @@
+import { config } from "dotenv";
 import { defineConfig } from "@playwright/test";
+
+config({ path: ".env.test.local", quiet: true });
 
 const port = Number(process.env.QW_TEST_PORT || 3210);
 const baseURL = `http://127.0.0.1:${port}`;
@@ -14,6 +17,7 @@ export default defineConfig({
   webServer: {
     command: `npm run start -- --port ${port}`,
     url: `${baseURL}/login`,
+    reuseExistingServer: false,
     env: {
       APP_URL: baseURL,
       ...(process.env.QW_E2E_DATABASE_URL

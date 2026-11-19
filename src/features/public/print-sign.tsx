@@ -2,52 +2,58 @@
 
 import Link from "next/link";
 import { ArrowLeft, Printer } from "lucide-react";
+import { QueueMark } from "@/components/brand";
 import type { Venue } from "./live";
 import { QrCode } from "./qr";
 import { VenueMark } from "./ui";
 
-export function PrintSign({
-  venue,
-  url,
-  slug,
-}: {
-  venue: Venue;
-  url: string;
-  slug: string;
-}) {
+export function PrintSign({ venue, url, slug }: { venue: Venue; url: string; slug: string }) {
   return (
-    <main id="main" className="poster-shell">
+    <main id="main" className="poster-page">
       <nav className="no-print poster-controls" aria-label="QR sign controls">
-        <Link href={`/join/${slug}`} className="visitor-button">
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          Visitor queue
+        <Link href={`/join/${slug}`} className="key key-quiet">
+          <ArrowLeft aria-hidden="true" />
+          Visitor page
         </Link>
-        <button
-          type="button"
-          className="visitor-button visitor-primary"
-          onClick={() => window.print()}
-        >
-          <Printer className="size-4" aria-hidden="true" />
-          Print QR sign
+        <p className="muted hidden text-sm sm:block">A4 portrait · prints in black and white</p>
+        <button type="button" className="key key-primary" onClick={() => window.print()}>
+          <Printer aria-hidden="true" />
+          Print sign
         </button>
       </nav>
-      <article className="qr-poster" aria-labelledby="poster-venue">
-        <VenueMark logoUrl={venue.logoUrl} primaryColor={venue.primaryColor} />
-        <p className="poster-venue" id="poster-venue">
-          {venue.name}
-        </p>
-        <h1 lang="bn">স্ক্যান করে টিকিট নিন</h1>
-        <p className="poster-subtitle" lang="en">
-          Scan to join the queue
-        </p>
+      <article className="poster" aria-labelledby="poster-title">
+        <header className="poster-venue">
+          <VenueMark logoUrl={venue.logoUrl} primaryColor={venue.primaryColor} name={venue.name} />
+          <span className="sign">{venue.name}</span>
+        </header>
+        <h1 id="poster-title" className="sign poster-title">
+          Scan to take a ticket
+          <span lang="bn">স্ক্যান করে টিকিট নিন</span>
+        </h1>
         <div className="poster-qr">
           <QrCode value={url} label="Join queue QR code" />
         </div>
-        <p lang="bn">ফোনের ক্যামেরা খুলে QR কোডটি স্ক্যান করুন।</p>
-        <p lang="en" className="mt-1">
-          Open your phone camera and point it at the QR code.
-        </p>
-        <p className="poster-address">{new URL(url).host}</p>
+        <ol className="poster-steps">
+          <li>
+            Open your phone camera
+            <span lang="bn">ফোনের ক্যামেরা খুলুন</span>
+          </li>
+          <li>
+            Point it at the code
+            <span lang="bn">কোডের দিকে ধরুন</span>
+          </li>
+          <li>
+            Choose your counter
+            <span lang="bn">কাউন্টার বেছে নিন</span>
+          </li>
+        </ol>
+        <footer className="poster-foot">
+          <span className="sign">{new URL(url).host}</span>
+          <span className="poster-brand">
+            <QueueMark size={20} />
+            QueueWindow
+          </span>
+        </footer>
       </article>
     </main>
   );

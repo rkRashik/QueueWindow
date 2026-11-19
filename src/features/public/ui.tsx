@@ -2,40 +2,47 @@
 
 import Image from "next/image";
 import { WifiOff } from "lucide-react";
-import { QueueMark } from "@/components/brand";
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { PublicLanguage, usePublicLocale } from "./language";
 import type { Venue } from "./live";
 
+/** The venue's logo, or its initial on its brand colour (a plate for the venue). */
 export function VenueMark({
   logoUrl,
   primaryColor,
+  name = "",
 }: {
   logoUrl?: string | null;
   primaryColor?: string;
+  name?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  return logoUrl && /^https:\/\//i.test(logoUrl) && !failed ? (
-    <Image
-      alt=""
-      unoptimized
-      src={logoUrl}
-      width={48}
-      height={48}
-      referrerPolicy="no-referrer"
-      className="venue-mark bg-white object-contain"
-      onError={() => setFailed(true)}
-    />
-  ) : (
+  if (logoUrl && /^https:\/\//i.test(logoUrl) && !failed)
+    return (
+      <Image
+        alt=""
+        unoptimized
+        src={logoUrl}
+        width={80}
+        height={80}
+        referrerPolicy="no-referrer"
+        className="venue-mark"
+        onError={() => setFailed(true)}
+      />
+    );
+  const initial = Array.from(name.trim())[0]?.toUpperCase();
+  if (!initial) return null;
+  return (
     <span
-      className="venue-mark grid place-items-center border-0 bg-transparent"
+      aria-hidden="true"
+      className="venue-mark"
       style={
-        primaryColor && /^#[0-9A-Fa-f]{6}$/.test(primaryColor)
-          ? { outline: `2px solid ${primaryColor}`, outlineOffset: 2 }
+        primaryColor && /^#[0-9a-f]{6}$/i.test(primaryColor)
+          ? ({ "--venue": primaryColor } as CSSProperties)
           : undefined
       }
     >
-      <QueueMark size={44} />
+      {initial}
     </span>
   );
 }
@@ -43,43 +50,38 @@ export function VenueMark({
 export function VisitorShell({
   venue,
   children,
+  wide = false,
+  tone,
 }: {
   venue?: Venue;
   children: ReactNode;
+  wide?: boolean;
+  tone?: "signal";
 }) {
   const { language } = usePublicLocale();
   return (
-    <main id="main" lang={language} className="visitor-shell">
-      <div className="visitor-ambient no-print" aria-hidden="true" />
-      <header
-        className="visitor-header no-print"
-        style={
-          venue && /^#[0-9a-f]{6}$/i.test(venue.primaryColor)
-            ? { borderColor: venue.primaryColor }
-            : undefined
-        }
-      >
+    <main id="main" lang={language} className="visitor" data-wide={wide} data-tone={tone}>
+      <header className="visitor-head no-print">
         <div className="flex min-w-0 items-center gap-3">
           <VenueMark
             key={venue?.logoUrl}
             logoUrl={venue?.logoUrl}
             primaryColor={venue?.primaryColor}
+            name={venue?.name}
           />
-          <p className="min-w-0 break-words text-base font-extrabold">
-            {venue?.name ?? "QueueWindow"}
-          </p>
+          <p className="sign visitor-venue">{venue?.name ?? "QueueWindow"}</p>
         </div>
         <PublicLanguage />
       </header>
-      <div className="visitor-content">{children}</div>
+      <div className="visitor-body">{children}</div>
     </main>
   );
 }
 
 export function ConnectionNote({ children }: { children: ReactNode }) {
   return (
-    <p role="status" className="visitor-note no-print">
-      <WifiOff className="size-4 shrink-0" aria-hidden="true" />
+    <p role="status" className="notice no-print">
+      <WifiOff aria-hidden="true" />
       <span>{children}</span>
     </p>
   );

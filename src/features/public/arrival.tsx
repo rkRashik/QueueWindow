@@ -1,29 +1,25 @@
 "use client";
 
-import { ArrowRight, Clock3, Printer, Users } from "lucide-react";
+import { ChevronRight, Printer } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CounterBadge } from "@/components/counter-badge";
-import { estimatedWait } from "@/features/queue/rules";
+import { Plate } from "@/components/plate";
 import { api, ApiError, jsonRequest } from "@/features/workspace/client";
-import { counterVars, getCounterTheme, sortCounters } from "@/lib/counter-theme";
+import { sortCounters } from "@/lib/counter-theme";
 import { formatNumber } from "@/lib/i18n";
-import { formatWait } from "@/lib/time";
 import { Dual, PublicLocale, Tx, usePublicLocale } from "./language";
-import { usePublicFeed, type PublicCounter, type Venue } from "./live";
+import { usePublicFeed, type DisplayData, type PublicCounter, type Venue } from "./live";
 import { QrCode } from "./qr";
 import { ConnectionNote, VisitorShell } from "./ui";
 
-type Receipt = { ticketId: string; tokenNumber: string; counterName: string };
+type Receipt = { ticketId: string; tokenNumber: string; counterName: string; prefix: string };
 
 function requestId() {
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = Array.from(bytes, (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
   return [
     hex.slice(0, 8),
     hex.slice(8, 12),
@@ -59,6 +55,35 @@ function clearKey(slot: string, remembered: Map<string, string>) {
   }
 }
 
+/** One honest line per counter: never "No wait" next to a minute count. */
+function WaitLine({ counter }: { counter: PublicCounter }) {
+  if (counter.status !== "OPEN")
+    return (
+      <span className="state" data-state="PAUSED">
+        <Tx k="closed" />
+      </span>
+    );
+  const minutes = counter.estimatedWaitMinutes;
+  const ahead = counter.waitingCount;
+  if (minutes === 0)
+    return (
+      <span className="state" data-state="OPEN">
+        <Tx k="noWait" />
+      </span>
+    );
+  const line = (language: "en" | "bn") => {
+    const about =
+      language === "en"
+        ? `about ${formatNumber(minutes, "en")} min`
+        : `প্রায় ${formatNumber(minutes, "bn")} মিনিট`;
+    if (!ahead) return language === "en" ? `Serving now · ${about}` : `সেবা চলছে · ${about}`;
+    return language === "en"
+      ? `${formatNumber(ahead, "en")} ahead · ${about}`
+      : `আগে ${formatNumber(ahead, "bn")} জন · ${about}`;
+  };
+  return <Dual en={line("en")} bn={line("bn")} />;
+}
+
 function KioskReceipt({
   receipt,
   venue,
@@ -73,81 +98,74 @@ function KioskReceipt({
   done: () => void;
 }) {
   const { t } = usePublicLocale();
-  const [paper, setPaper] = useState("58");
-  const track = new URL(`/join/${slug}/ticket/${receipt.ticketId}`, origin)
-    .href;
+  const [paper, setPaper] = useState<"58" | "80">("58");
+  const track = new URL(`/join/${slug}/ticket/${receipt.ticketId}`, origin).href;
   useEffect(() => {
     const reset = setTimeout(done, 30_000);
     return () => clearTimeout(reset);
   }, [done]);
-
   return (
-    <>
-      <section
-        className="kiosk-receipt"
-        data-paper={paper}
-        aria-labelledby="receipt-title"
-      >
-        <p className="text-sm font-bold">{venue.name}</p>
-        <h1 id="receipt-title" className="mt-1 text-base font-extrabold">
-          {t.receiptTitle}
+    <div className="kiosk-done">
+      <section className="receipt" data-paper={paper} aria-labelledby="receipt-title">
+        <p className="receipt-venue">{venue.name}</p>
+        <h1 id="receipt-title" className="caps">
+          <Tx k="ticket" inline />
         </h1>
-        <p className="visitor-token tabular-nums" translate="no">
+        <p className="sign receipt-token" translate="no">
           {receipt.tokenNumber}
         </p>
-        <p className="font-bold">{receipt.counterName}</p>
+        <p className="receipt-counter">
+          <Plate prefix={receipt.prefix} />
+          <span>{receipt.counterName}</span>
+        </p>
         <div className="receipt-qr">
           <QrCode value={track} label="Track this ticket QR code" />
         </div>
-        <p className="text-sm font-semibold">
+        <p className="receipt-help">
           <Tx k="track" />
         </p>
       </section>
-      <div className="no-print mt-5 space-y-3">
-        <label className="block text-sm font-bold">
-          {t.paper}
-          <select
-            className="field mt-1 min-h-12"
-            value={paper}
-            onChange={(event) => setPaper(event.target.value)}
-          >
-            <option value="58">58 mm</option>
-            <option value="80">80 mm</option>
-          </select>
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            className="visitor-button"
-            type="button"
-            onClick={() => window.print()}
-          >
-            <Printer aria-hidden="true" className="size-4" />
-            {t.receipt}
-          </button>
-          <button
-            className="visitor-button visitor-primary"
-            type="button"
-            onClick={done}
-          >
-            {t.done}
-          </button>
+      <div className="no-print kiosk-actions">
+        <div className="seg" role="group" aria-label={t.paper}>
+          {(["58", "80"] as const).map((width) => (
+            <button
+              key={width}
+              type="button"
+              aria-pressed={paper === width}
+              onClick={() => setPaper(width)}
+            >
+              {width} mm
+            </button>
+          ))}
         </div>
-        <p className="text-sm font-semibold">{t.resets}</p>
+        <button className="key" type="button" onClick={() => window.print()}>
+          <Printer aria-hidden="true" />
+          {t.receipt}
+        </button>
+        <button className="key key-primary" type="button" onClick={done}>
+          {t.done}
+        </button>
       </div>
-    </>
+      <div className="no-print kiosk-reset" aria-hidden="true">
+        <span />
+      </div>
+      <p className="no-print muted text-center text-sm">{t.resets}</p>
+    </div>
   );
 }
 
 function Arrival({
   slug,
   kioskOrigin,
+  initial,
 }: {
   slug: string;
   kioskOrigin?: string;
+  initial: DisplayData | null;
 }) {
   const router = useRouter();
-  const { t, language } = usePublicLocale();
-  const { data, error, online, reconnecting, refresh } = usePublicFeed(slug);
+  const { t } = usePublicLocale();
+  const { data, error, online, reconnecting, refresh } = usePublicFeed(slug, undefined, initial);
   const [pending, setPending] = useState<string | null>(null);
   const [failure, setFailure] = useState<
     "limited" | "pausedError" | "expired" | "joinError" | null
@@ -163,43 +181,39 @@ function Arrival({
     setPending(counter.id);
     setFailure(null);
     const slot = `qw-pending-${mode}-${slug}-${counter.id}`;
-
     try {
       const idempotencyKey = pendingKey(slot, keys.current);
-      const result = await api<Omit<Receipt, "counterName">>(
+      const result = await api<{ ticketId: string; tokenNumber: string }>(
         `/api/public/${slug}/join`,
         jsonRequest("POST", { counterId: counter.id, idempotencyKey }),
       );
+      clearKey(slot, keys.current);
       if (kioskOrigin) {
-        clearKey(slot, keys.current);
-        setReceipt({ ...result, counterName: counter.name });
+        setReceipt({ ...result, counterName: counter.name, prefix: counter.prefix });
         locked.current = false;
         setPending(null);
       } else {
-        clearKey(slot, keys.current);
         router.replace(`/join/${slug}/ticket/${result.ticketId}`);
       }
     } catch (error) {
       locked.current = false;
       setPending(null);
-      if (error instanceof ApiError && error.status === 400)
-        clearKey(slot, keys.current);
-      if (error instanceof ApiError && error.status === 429)
-        setFailure("limited");
+      if (error instanceof ApiError && error.status === 400) clearKey(slot, keys.current);
+      if (error instanceof ApiError && error.status === 429) setFailure("limited");
       else if (error instanceof ApiError && error.status === 409) {
         setFailure("pausedError");
         void refresh();
-      } else if (error instanceof ApiError && error.status === 402)
-        setFailure("expired");
+      } else if (error instanceof ApiError && error.status === 402) setFailure("expired");
       else setFailure("joinError");
     }
   }
 
   // Clear only the in-memory receipt when a shared kiosk is ready for its next visitor.
   const done = useCallback(() => setReceipt(null), []);
+  const counters = sortCounters(data?.counters ?? []);
 
   return (
-    <VisitorShell venue={data?.organization}>
+    <VisitorShell venue={data?.organization} wide={Boolean(kioskOrigin)}>
       {receipt && kioskOrigin && data ? (
         <KioskReceipt
           receipt={receipt}
@@ -210,120 +224,58 @@ function Arrival({
         />
       ) : (
         <>
-          <div className="mb-6">
-            <h1 className="visitor-heading">
-              <Tx k="choose" />
-            </h1>
-            <p className="mt-2 text-base leading-relaxed text-slate-700">
-              <Tx k="select" />
-            </p>
-          </div>
+          <h1 className="sign visitor-title">
+            <Tx k="choose" />
+          </h1>
+          <p className="visitor-lede">
+            <Tx k="tapCounter" />
+          </p>
           {reconnecting && (
             <ConnectionNote>
               {t.offline} {data && t.offlineDetail}
             </ConnectionNote>
           )}
           {failure && (
-            <p className="visitor-alert" role="alert">
+            <p className="notice" data-tone="error" role="alert">
               {t[failure]}
             </p>
           )}
           {error && !data && (
-            <div className="visitor-card">
-              <p role="alert">
-                {error === 404 ? t.missingVenue : t.unavailable}
-              </p>
+            <div className="visitor-empty">
+              <p role="alert">{error === 404 ? t.missingVenue : t.unavailable}</p>
               {error !== 404 && (
-                <button
-                  type="button"
-                  className="visitor-button mt-3"
-                  onClick={() => void refresh()}
-                >
+                <button type="button" className="key" onClick={() => void refresh()}>
                   {t.retry}
                 </button>
               )}
             </div>
           )}
-          {!data && !error && (
-            <p role="status" className="visitor-card">
-              {t.loading}
-            </p>
-          )}
-          {data && !data.counters.length && (
-            <div className="visitor-card">
-              <h2 className="text-lg font-extrabold">{t.noCounters}</h2>
-              <p className="mt-1">{t.noCountersDetail}</p>
+          {data && !counters.length && (
+            <div className="visitor-empty">
+              <p className="font-bold">{t.noCounters}</p>
+              <p className="muted">{t.noCountersDetail}</p>
             </div>
           )}
-          <ul className="grid gap-3">
-            {sortCounters(data?.counters ?? []).map((counter) => {
-              const theme = getCounterTheme(counter.prefix);
+          <ul className="counter-list">
+            {counters.map((counter) => {
               const open = counter.status === "OPEN";
-              const ahead = counter.waitingCount;
-              const estimate = Math.max(
-                estimatedWait(ahead, counter.avgServiceSeconds, null),
-                counter.calledTicket ? 1 : 0,
-              );
-              const count = formatNumber(ahead, language);
-              const waitLabel = ahead
-                ? `${count} ${t.waitingWord}`
-                : t.noWait;
               return (
                 <li key={counter.id}>
                   <button
                     type="button"
+                    className="counter-choice"
                     disabled={!online || pending !== null || !open}
-                    aria-label={`${counter.name} · ${open ? t.open : t.paused}${open ? ` · ${waitLabel}` : ""}`}
-                    className="arrival-counter"
-                    style={counterVars(theme)}
+                    aria-busy={pending === counter.id}
                     onClick={() => void issue(counter)}
                   >
-                    <CounterBadge prefix={counter.prefix} size="lg" />
-                    <span className="min-w-0 flex-1 break-words">
-                      <span className="block text-lg leading-snug font-extrabold">
-                        {counter.name}
+                    <Plate prefix={counter.prefix} className="counter-choice-plate" />
+                    <span className="counter-choice-text">
+                      <span className="counter-choice-name">{counter.name}</span>
+                      <span className="counter-choice-meta">
+                        {pending === counter.id ? <Tx k="pending" /> : <WaitLine counter={counter} />}
                       </span>
-                      {pending === counter.id ? (
-                        <span className="arrival-meta">
-                          <Tx k="pending" />
-                        </span>
-                      ) : open ? (
-                        <span className="arrival-meta">
-                          <span>
-                            <Users className="size-4" aria-hidden="true" />
-                            {ahead ? (
-                              <Dual
-                                en={`${formatNumber(ahead, "en")} waiting`}
-                                bn={`${formatNumber(ahead, "bn")} জন অপেক্ষায়`}
-                              />
-                            ) : (
-                              <Tx k="noWait" />
-                            )}
-                          </span>
-                          {estimate > 0 && (
-                            <span>
-                              <Clock3 className="size-4" aria-hidden="true" />
-                              ~{formatWait(estimate, language)}
-                            </span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="arrival-meta">
-                          <Tx k="pausedError" />
-                        </span>
-                      )}
                     </span>
-                    <span
-                      className={`arrival-status ${open ? "" : "arrival-status-paused"}`}
-                    >
-                      {open ? t.open : t.paused}
-                    </span>
-                    {open && (
-                      <ArrowRight
-                        className="size-5 shrink-0 text-slate-500"
-                        aria-hidden="true"
-                      />
-                    )}
+                    {open && <ChevronRight aria-hidden="true" className="counter-choice-go" />}
                   </button>
                 </li>
               );
@@ -335,7 +287,11 @@ function Arrival({
   );
 }
 
-export function ArrivalScreen(props: { slug: string; kioskOrigin?: string }) {
+export function ArrivalScreen(props: {
+  slug: string;
+  kioskOrigin?: string;
+  initial: DisplayData | null;
+}) {
   return (
     <PublicLocale>
       <Arrival {...props} />

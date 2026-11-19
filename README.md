@@ -64,8 +64,10 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-- Set `QW_TEST_DATABASE_URL` in your shell to a disposable PostgreSQL database on localhost to include the Vitest integration suite. It applies migrations in a temporary schema. GitHub Actions provides PostgreSQL 16 for this suite.
-- Set `QW_E2E_DATABASE_URL` in your shell to an isolated, migrated Neon test database without an existing `demo-clinic` organization to run all Playwright journeys. Playwright starts the production build locally.
+- Put `QW_TEST_DATABASE_URL` and `QW_E2E_DATABASE_URL` in `.env.test.local` (gitignored; Vitest and Playwright load it). Both must be loopback PostgreSQL databases: the app talks to `localhost` through `pg` and to anything else through Neon's driver.
+- `QW_TEST_DATABASE_URL` runs the Vitest integration suite in a throwaway schema. GitHub Actions provides PostgreSQL 16 for it.
+- `QW_E2E_DATABASE_URL` must already be migrated (`psql -f drizzle/0000_phase_1.sql -f drizzle/0001_phase_2.sql`). The public journey resets `demo-clinic` there. Playwright starts the production build locally.
+- New workspaces are free and never expire. Set `QW_TRIAL_DAYS=14` to start new signups on an expiring trial instead.
 
 ## Deployment
 

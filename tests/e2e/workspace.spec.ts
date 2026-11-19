@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { Pool } from "@neondatabase/serverless";
+import { Pool } from "pg";
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -58,10 +58,10 @@ test.describe("authenticated workspaces", () => {
       const counters = await (await page.request.get("/api/desk/state")).json();
       const counterId = counters.selectedCounterId;
       await expect(
-        page.getByRole("button", { name: "Issue walk-in" }),
+        page.getByRole("button", { name: /Walk-in/ }),
       ).toBeEnabled();
       await page.keyboard.press("n");
-      const waiting = page.getByRole("list", { name: "Waiting queue" });
+      const waiting = page.getByRole("list", { name: /^Waiting/ });
       await expect(waiting.getByText("A-01")).toBeVisible();
       for (let index = 0; index < 3; index++) {
         const result = await page.request.post(`/api/public/${slug}/join`, {
@@ -72,21 +72,21 @@ test.describe("authenticated workspaces", () => {
       }
       await expect(waiting.getByText("A-04")).toBeVisible({ timeout: 6_000 });
       await expect(
-        page.getByRole("button", { name: "Call next" }),
+        page.getByRole("button", { name: /^Call next/ }),
       ).toBeEnabled();
       await page.keyboard.press("Space");
-      const active = page.getByRole("region", { name: "Now serving" });
-      await expect(active.getByText("A-01", { exact: true })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Recall" })).toBeEnabled();
+      const active = page.locator(".desk-now");
+      await expect(active.locator(".drum .sr-only")).toHaveText("A-01");
+      await expect(page.getByRole("button", { name: "Recall", exact: true })).toBeEnabled();
       await page.keyboard.press("r");
       await expect(
         page.getByRole("status").filter({ hasText: "Ticket recalled." }),
       ).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Complete" }),
+        page.getByRole("button", { name: "Complete", exact: true }),
       ).toBeEnabled();
       await page.keyboard.press("c");
-      await expect(active.getByText("No active ticket")).toBeVisible();
+      await expect(active.getByText("No one at the counter")).toBeVisible();
 
       await context.setOffline(true);
       try {
@@ -95,13 +95,13 @@ test.describe("authenticated workspaces", () => {
         ).toBeVisible();
         await expect(waiting.getByText("A-02")).toBeVisible();
         await expect(
-          page.getByRole("button", { name: "Call next" }),
+          page.getByRole("button", { name: /^Call next/ }),
         ).toBeDisabled();
       } finally {
         await context.setOffline(false);
       }
       await expect(
-        page.getByRole("button", { name: "Call next" }),
+        page.getByRole("button", { name: /^Call next/ }),
       ).toBeEnabled();
       await page.getByRole("button", { name: "বাংলা", exact: true }).click();
       await page.reload();
@@ -178,9 +178,9 @@ test.describe("authenticated workspaces", () => {
       await page
         .getByRole("link", { name: "Branding & plan", exact: true })
         .click();
-      await expect(
-        page.getByRole("heading", { name: "Subscription" }),
-      ).toBeVisible();
+      // New workspaces are free and never expire unless QW_TRIAL_DAYS is set.
+      await expect(page.getByRole("heading", { name: "Plan", exact: true })).toBeVisible();
+      await expect(page.getByText("Free", { exact: true })).toBeVisible();
 
       await page.request.post("/api/auth/logout", {
         headers: { Origin: baseURL! },

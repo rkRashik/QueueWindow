@@ -8,7 +8,13 @@ import { HttpError } from "@/lib/http";
 import type { z } from "zod";
 import type { loginInput, signupInput } from "./validation";
 
-const trialLengthMs = 14 * 24 * 60 * 60 * 1000;
+/** Free today. Set QW_TRIAL_DAYS (e.g. 14) to start new workspaces on an expiring trial instead. */
+function newWorkspacePlan() {
+  const days = Number(process.env.QW_TRIAL_DAYS);
+  return Number.isFinite(days) && days > 0
+    ? { plan: "TRIAL", expiresAt: new Date(Date.now() + days * 86_400_000) }
+    : { plan: "FREE", expiresAt: new Date("2099-01-01T00:00:00.000Z") };
+}
 const passwordCost = 12;
 const dummyHash =
   "$2b$12$mcL5s4BA0i0msxQtHsC65.AGPf0S9jZcMPl/9y4qXGNiis5oH9IOO";
@@ -38,7 +44,7 @@ export async function signup(input: z.infer<typeof signupInput>) {
         .values({
           name: input.orgName,
           slug: organizationSlug(input.orgName),
-          expiresAt: new Date(Date.now() + trialLengthMs),
+          ...newWorkspacePlan(),
         })
         .returning({ id: organizations.id, slug: organizations.slug });
 

@@ -2,8 +2,8 @@
 
 import { Pencil, Plus, Trash2, UserPlus } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { CounterBadge } from "@/components/counter-badge";
-import { getCounterTheme, sortCounters } from "@/lib/counter-theme";
+import { Plate } from "@/components/plate";
+import { sortCounters } from "@/lib/counter-theme";
 import { AdminHeading, ResourceNotice } from "./admin-ui";
 import { useMutation, useResource } from "./admin-data";
 import { api, jsonRequest } from "./client";
@@ -84,7 +84,7 @@ export function CountersSection({ notify }: { notify: Notify }) {
         description={t.countersDetail}
         action={
           <button
-            className="btn btn-primary"
+            className="key key-primary"
             type="button"
             onClick={() => open({ kind: "create" })}
             disabled={mutation.busy}
@@ -103,7 +103,7 @@ export function CountersSection({ notify }: { notify: Notify }) {
         <Notice title={mutation.error} tone="error" />
       )}
       {data && (
-        <div className="panel mt-4">
+        <div className="mt-4">
           {data.counters.length ? (
             <div
               className="overflow-x-auto"
@@ -111,7 +111,7 @@ export function CountersSection({ notify }: { notify: Notify }) {
               role="region"
               aria-label={t.counters}
             >
-              <table className="data-table min-w-[32rem]">
+              <table className="ledger min-w-[32rem]">
                 <thead>
                   <tr>
                     {[t.counter, t.prefix, t.status, t.actions].map((label) => (
@@ -124,16 +124,14 @@ export function CountersSection({ notify }: { notify: Notify }) {
                 <tbody>
                   {sortCounters(data.counters).map((counter) => (
                     <tr key={counter.id}>
-                      <td
-                        className="font-extrabold"
-                        style={{
-                          boxShadow: `inset 3px 0 0 ${getCounterTheme(counter.prefix).hue}`,
-                        }}
-                      >
-                        {counter.name}
+                      <td className="font-bold">
+                        <span className="flex items-center gap-2.5">
+                          <Plate prefix={counter.prefix} className="text-xl" />
+                          {counter.name}
+                        </span>
                       </td>
-                      <td>
-                        <CounterBadge prefix={counter.prefix} size="sm" />
+                      <td className="sign text-lg font-semibold" translate="no">
+                        {counter.prefix}
                       </td>
                       <td>
                         <StatusPill status={counter.status} />
@@ -142,7 +140,7 @@ export function CountersSection({ notify }: { notify: Notify }) {
                         <div className="flex flex-wrap gap-1">
                           <button
                             type="button"
-                            className="btn btn-quiet"
+                            className="key key-quiet key-sm"
                             disabled={mutation.busy}
                             onClick={() => toggle(counter)}
                           >
@@ -152,7 +150,7 @@ export function CountersSection({ notify }: { notify: Notify }) {
                           </button>
                           <button
                             type="button"
-                            className="btn btn-quiet"
+                            className="key key-quiet key-sm"
                             aria-label={`${t.edit} ${counter.name}`}
                             disabled={mutation.busy}
                             onClick={() => open({ kind: "edit", counter })}
@@ -161,7 +159,7 @@ export function CountersSection({ notify }: { notify: Notify }) {
                           </button>
                           <button
                             type="button"
-                            className="btn btn-quiet text-rose-700 hover:text-rose-800"
+                            className="key key-quiet key-sm key-danger"
                             aria-label={`${t.delete} ${counter.name}`}
                             disabled={mutation.busy}
                             onClick={() => open({ kind: "delete", counter })}
@@ -176,7 +174,7 @@ export function CountersSection({ notify }: { notify: Notify }) {
               </table>
             </div>
           ) : (
-            <p className="p-5 text-sm text-muted">{t.noCounters}</p>
+            <p className="p-5 text-sm muted">{t.noCounters}</p>
           )}
         </div>
       )}
@@ -194,8 +192,8 @@ export function CountersSection({ notify }: { notify: Notify }) {
         >
           <form onSubmit={submit} className="space-y-4">
             {modal.kind === "delete" ? (
-              <p className="text-sm text-muted">
-                <strong className="block text-ink">{modal.counter.name}</strong>
+              <p className="text-sm muted">
+                <strong className="block">{modal.counter.name}</strong>
                 {t.deleteCounterDetail}
               </p>
             ) : (
@@ -223,7 +221,7 @@ export function CountersSection({ notify }: { notify: Notify }) {
             {mutation.error && <Notice title={mutation.error} tone="error" />}
             <div className="flex flex-wrap justify-end gap-2">
               <button
-                className="btn"
+                className="key"
                 type="button"
                 disabled={mutation.busy}
                 onClick={() => setModal(null)}
@@ -231,7 +229,7 @@ export function CountersSection({ notify }: { notify: Notify }) {
                 {t.cancel}
               </button>
               <button
-                className={`btn ${modal.kind === "delete" ? "btn-destructive" : "btn-primary"}`}
+                className={`key ${modal.kind === "delete" ? "key-danger" : "key-primary"}`}
                 disabled={mutation.busy}
               >
                 {mutation.busy
@@ -299,7 +297,7 @@ export function TeamSection({ notify }: { notify: Notify }) {
         description={t.teamDetail}
         action={
           <button
-            className="btn btn-primary"
+            className="key key-primary"
             type="button"
             onClick={() => open("create")}
             disabled={mutation.busy}
@@ -317,14 +315,14 @@ export function TeamSection({ notify }: { notify: Notify }) {
       {credentials && (
         <section
           aria-labelledby="login-details"
-          className="mb-4 rounded-xl border border-teal-200 bg-teal-50 p-4"
+          className="mb-6 border-y border-(--line-2) py-4"
         >
-          <h2 id="login-details" className="section-heading">
+          <h2 id="login-details" className="sign text-xl font-semibold">
             {t.loginDetails}
           </h2>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-sm muted">
             {t.loginDetailsHelp}{" "}
-            <strong className="break-all text-ink" translate="no">
+            <strong className="break-all" translate="no">
               {credentials.username}
             </strong>
           </p>
@@ -338,7 +336,7 @@ export function TeamSection({ notify }: { notify: Notify }) {
               }
             />
             <button
-              className="btn btn-quiet"
+              className="key key-quiet key-sm"
               type="button"
               onClick={() => setCredentials(null)}
             >
@@ -348,7 +346,7 @@ export function TeamSection({ notify }: { notify: Notify }) {
         </section>
       )}
       {data && (
-        <div className="panel">
+        <div className="">
           {data.staff.length ? (
             <div
               className="overflow-x-auto"
@@ -356,7 +354,7 @@ export function TeamSection({ notify }: { notify: Notify }) {
               role="region"
               aria-label={t.team}
             >
-              <table className="data-table min-w-[28rem]">
+              <table className="ledger min-w-[28rem]">
                 <thead>
                   <tr>
                     {[t.fullName, t.username, t.role, t.actions].map(
@@ -371,12 +369,12 @@ export function TeamSection({ notify }: { notify: Notify }) {
                 <tbody>
                   {data.staff.map((account) => (
                     <tr key={account.id}>
-                      <td className="font-extrabold">{account.fullName}</td>
+                      <td className="font-bold">{account.fullName}</td>
                       <td translate="no">{account.username}</td>
-                      <td className="text-muted">{t.staff}</td>
+                      <td className="muted">{t.staff}</td>
                       <td>
                         <button
-                          className="btn btn-quiet text-rose-700 hover:text-rose-800"
+                          className="key key-quiet key-sm key-danger"
                           type="button"
                           aria-label={`${t.remove} ${account.fullName}`}
                           disabled={mutation.busy}
@@ -393,8 +391,8 @@ export function TeamSection({ notify }: { notify: Notify }) {
             </div>
           ) : (
             <div className="p-5">
-              <h2 className="section-heading">{t.noStaff}</h2>
-              <p className="mt-1 text-sm text-muted">{t.emptyTeam}</p>
+              <h2 className="sign text-xl font-semibold">{t.noStaff}</h2>
+              <p className="mt-1 text-sm muted">{t.emptyTeam}</p>
             </div>
           )}
         </div>
@@ -438,8 +436,8 @@ export function TeamSection({ notify }: { notify: Notify }) {
                 />
               </>
             ) : (
-              <p className="text-sm text-muted">
-                <strong className="block text-ink">{modal.fullName}</strong>
+              <p className="text-sm muted">
+                <strong className="block">{modal.fullName}</strong>
                 {t.removeStaffDetail}
               </p>
             )}
@@ -447,14 +445,14 @@ export function TeamSection({ notify }: { notify: Notify }) {
             <div className="flex flex-wrap justify-end gap-2">
               <button
                 type="button"
-                className="btn"
+                className="key"
                 disabled={mutation.busy}
                 onClick={() => setModal(null)}
               >
                 {t.cancel}
               </button>
               <button
-                className={`btn ${modal === "create" ? "btn-primary" : "btn-destructive"}`}
+                className={`key ${modal === "create" ? "key-primary" : "key-danger"}`}
                 disabled={mutation.busy}
               >
                 {mutation.busy

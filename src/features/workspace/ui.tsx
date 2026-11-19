@@ -1,15 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  AlertCircle,
-  ArrowLeft,
-  Check,
-  CircleCheck,
-  Clipboard,
-  LogOut,
-  X,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Clipboard, LogOut, X } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -19,6 +11,7 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
 } from "react";
+import { Wordmark } from "@/components/brand";
 import { LanguageSwitch, useLocale } from "./locale";
 
 export type Workspace = {
@@ -29,56 +22,39 @@ export type Workspace = {
   expiresAt: string;
 };
 
-export { Wordmark } from "@/components/brand";
-import { Wordmark } from "@/components/brand";
+export { Wordmark };
 
 export function WorkspaceHeader({
   organization,
-  surface,
   children,
 }: {
   organization: string;
-  surface: "desk" | "admin";
   children?: ReactNode;
 }) {
   const { t } = useLocale();
   return (
-    <header className="eyeline sticky top-0 z-20 bg-white/85 backdrop-blur-xl">
-      <div className="shell-width flex min-h-17 flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-          <Wordmark />
-          <span
-            className="hidden h-5 border-s border-line sm:block"
-            aria-hidden="true"
-          />
-          <span
-            className="max-w-[16ch] truncate rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700 sm:max-w-[24ch]"
-            title={organization}
-          >
-            {organization}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-          {surface === "admin" && (
-            <Link className="btn btn-quiet" href="/desk">
-              <ArrowLeft aria-hidden="true" />
-              {t.desk}
-            </Link>
-          )}
+    <header className="ws-head">
+      <div className="ws-head-row">
+        <Wordmark href="/desk" />
+        <span className="ws-org" title={organization}>
+          {organization}
+        </span>
+        <div className="ms-auto flex items-center gap-1.5">
+          <Link className="key key-quiet key-sm" href="/desk">
+            <ArrowLeft aria-hidden="true" />
+            {t.desk}
+          </Link>
           <LanguageSwitch />
           <form action="/api/auth/logout" method="post">
-            <button type="submit" className="btn btn-quiet whitespace-nowrap">
+            <button type="submit" className="key key-quiet key-sm">
               <LogOut aria-hidden="true" />
-              {t.logout}
+              <span className="hidden sm:inline">{t.logout}</span>
+              <span className="sr-only sm:hidden">{t.logout}</span>
             </button>
           </form>
         </div>
       </div>
-      {children && (
-        <div className="border-t border-slate-100">
-          <div className="shell-width">{children}</div>
-        </div>
-      )}
+      {children}
     </header>
   );
 }
@@ -86,9 +62,7 @@ export function WorkspaceHeader({
 export function StatusPill({ status }: { status: "OPEN" | "PAUSED" }) {
   const { t } = useLocale();
   return (
-    <span
-      className={`status-pill ${status === "OPEN" ? "status-open" : "status-paused"}`}
-    >
+    <span className="state" data-state={status}>
       {status === "OPEN" ? t.open : t.paused}
     </span>
   );
@@ -119,9 +93,7 @@ export function InputField({
         className="field"
         aria-invalid={error ? true : undefined}
         aria-describedby={
-          [help && `${id}-help`, error && `${id}-error`]
-            .filter(Boolean)
-            .join(" ") || undefined
+          [help && `${id}-help`, error && `${id}-error`].filter(Boolean).join(" ") || undefined
         }
       />
       {help && (
@@ -148,24 +120,20 @@ export function Notice({
   tone?: "warning" | "error";
 }) {
   return (
-    <div
-      role={tone === "error" ? "alert" : "status"}
-      className={`flex items-start gap-3 rounded-xl border px-4 py-3.5 ${tone === "error" ? "border-rose-200 bg-rose-50 text-rose-900" : "border-amber-200 bg-amber-50 text-amber-950"}`}
-    >
-      <AlertCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-      <div className="min-w-0 break-words text-sm">
-        <p className="font-extrabold">{title}</p>
-        {children && <div className="mt-0.5">{children}</div>}
+    <div role={tone === "error" ? "alert" : "status"} className="notice" data-tone={tone}>
+      <AlertCircle aria-hidden="true" />
+      <div className="min-w-0 break-words">
+        <p className="font-bold">{title}</p>
+        {children && <div className="muted mt-0.5">{children}</div>}
       </div>
     </div>
   );
 }
 
 export function useToast() {
-  const [message, setMessage] = useState<{
-    text: string;
-    error: boolean;
-  } | null>(null);
+  const [message, setMessage] = useState<{ text: string; error: boolean; id: number } | null>(
+    null,
+  );
   const timeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const dismiss = useCallback(() => {
     clearTimeout(timeout.current);
@@ -173,8 +141,8 @@ export function useToast() {
   }, []);
   const notify = useCallback((text: string, error = false) => {
     clearTimeout(timeout.current);
-    setMessage({ text, error });
-    timeout.current = setTimeout(() => setMessage(null), error ? 8_000 : 4_000);
+    setMessage((previous) => ({ text, error, id: (previous?.id ?? 0) + 1 }));
+    timeout.current = setTimeout(() => setMessage(null), error ? 8_000 : 3_000);
   }, []);
   useEffect(() => () => clearTimeout(timeout.current), []);
   return { message, notify, dismiss };
@@ -183,25 +151,14 @@ export function useToast() {
 export function Toast({ toast }: { toast: ReturnType<typeof useToast> }) {
   const { t } = useLocale();
   return (
-    <div className="fixed right-4 bottom-4 z-30 sm:right-7 sm:bottom-6">
+    <div className="toast-dock">
       <div role="status" aria-atomic="true">
         {toast.message && (
-          <div className="toast">
-            {toast.message.error ? (
-              <AlertCircle
-                className="size-4 shrink-0 text-rose-700"
-                aria-hidden="true"
-              />
-            ) : (
-              <CircleCheck
-                className="size-4 shrink-0 text-emerald-700"
-                aria-hidden="true"
-              />
-            )}
+          <div key={toast.message.id} className="toast" data-error={toast.message.error}>
             <span className="min-w-0 break-words">{toast.message.text}</span>
             <button
               type="button"
-              className="btn btn-quiet min-h-8 px-2"
+              className="key"
               aria-label={t.dismiss}
               onClick={toast.dismiss}
             >
@@ -235,8 +192,7 @@ export function Modal({
     element.showModal();
     return () => {
       element.close();
-      if (previous instanceof HTMLElement && previous.isConnected)
-        previous.focus();
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
     };
   }, []);
   return (
@@ -249,13 +205,13 @@ export function Modal({
         if (!busy) onClose();
       }}
     >
-      <div className="eyeline flex items-center justify-between gap-4 px-5 py-3">
-        <h2 id={heading} className="section-heading">
+      <div className="dialog-head">
+        <h2 id={heading} className="sign text-xl font-semibold">
           {title}
         </h2>
         <button
           type="button"
-          className="btn btn-quiet px-2.5"
+          className="key key-quiet key-icon"
           aria-label={t.close}
           disabled={busy}
           onClick={onClose}
@@ -284,7 +240,7 @@ export function CopyButton({
   return (
     <button
       type="button"
-      className="btn"
+      className="key"
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(value());

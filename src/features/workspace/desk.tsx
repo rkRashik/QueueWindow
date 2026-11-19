@@ -1,62 +1,36 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import {
-  ArrowRight,
-  Bell,
-  Check,
-  Clock3,
-  CircleHelp,
-  ListOrdered,
+  Keyboard,
   LogOut,
+  Menu,
   Monitor,
-  Pause,
-  Play,
   Plus,
   Printer,
   QrCode,
   Settings2,
   SkipForward,
   Tablet,
-  Ticket,
-  User,
-  X,
-  ChevronDown,
 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
-import { Wordmark } from "@/components/brand";
-import { CounterBadge } from "@/components/counter-badge";
+import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
+import { QueueMark } from "@/components/brand";
+import { Drum } from "@/components/drum";
 import { FullscreenToggle } from "@/components/fullscreen";
-import { PaceBar } from "@/components/pace-bar";
+import { Plate } from "@/components/plate";
 import { Popover } from "@/components/popover";
-import {
-  counterVars,
-  getCounterTheme,
-  sortCounters,
-} from "@/lib/counter-theme";
+import { estimatedWait } from "@/features/queue/rules";
+import { counterVars, getCounterTheme, sortCounters } from "@/lib/counter-theme";
 import { formatElapsed, formatNumber } from "@/lib/i18n";
-import { formatWait, pace, targetSeconds } from "@/lib/time";
+import { formatClock, formatWait, pace, targetSeconds } from "@/lib/time";
 import { api, ApiError, jsonRequest } from "./client";
 import { useDeskState, type DeskSnapshot } from "./desk-state";
 import { LanguageSwitch, LocaleProvider, useLocale } from "./locale";
-import {
-  Modal,
-  Notice,
-  StatusPill,
-  Toast,
-  useToast,
-  type Workspace,
-} from "./ui";
+import { Modal, Notice, Toast, useToast, type Workspace } from "./ui";
 
 type TicketView = NonNullable<DeskSnapshot["calledTicket"]>;
-type Action =
-  | "ISSUE_WALKIN"
-  | "CALL_NEXT"
-  | "COMPLETE"
-  | "SKIP"
-  | "RECALL"
-  | "TOGGLE_PAUSE";
+type Action = "ISSUE_WALKIN" | "CALL_NEXT" | "COMPLETE" | "SKIP" | "RECALL" | "TOGGLE_PAUSE";
+
 const shortcuts: Record<string, Action> = {
   " ": "CALL_NEXT",
   Enter: "CALL_NEXT",
@@ -69,10 +43,6 @@ const shortcuts: Record<string, Action> = {
 
 function elapsed(now: number, start: string) {
   return Math.max(0, (now - Date.parse(start)) / 1_000);
-}
-
-function Kbd({ children }: { children: string }) {
-  return <kbd className="kbd">{children}</kbd>;
 }
 
 function ShortcutsModal({ onClose }: { onClose: () => void }) {
@@ -88,157 +58,136 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
   ];
   return (
     <Modal title={t.shortcuts} onClose={onClose} busy={false}>
-      <ul className="grid gap-1">
-        {rows.map(([keys, label]) => (
-          <li
-            key={label}
-            className="flex items-center justify-between gap-4 rounded-lg px-2 py-2 text-sm font-semibold even:bg-slate-50"
-          >
-            <span>{label}</span>
-            <span className="flex gap-1">
-              {keys.map((key) => (
-                <Kbd key={key}>{key}</Kbd>
-              ))}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <table className="ledger">
+        <tbody>
+          {rows.map(([keys, label]) => (
+            <tr key={label}>
+              <td className="font-semibold">{label}</td>
+              <td className="text-end">
+                <span className="inline-flex gap-1">
+                  {keys.map((key) => (
+                    <kbd key={key}>{key}</kbd>
+                  ))}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </Modal>
   );
 }
 
-function WaitingQueue({
+/** A ruler, not a progress bar: minute ticks to 1.5× target, target marked. */
+function ServiceGauge({ seconds }: { seconds: number }) {
+  const { t, language } = useLocale();
+  const span = targetSeconds * 1.5;
+  const level = pace(seconds).level;
+  return (
+    <div className="gauge" data-level={level}>
+      <div className="gauge-read">
+        <span className="sign gauge-time">{formatElapsed(seconds, language)}</span>
+        <span className="sign muted text-base font-semibold">
+          {t.target} {formatWait(targetSeconds / 60, language)}
+        </span>
+      </div>
+      <div
+        className="gauge-rule"
+        style={{ "--ticks": span / 60, "--target": targetSeconds / span } as CSSProperties}
+        aria-hidden="true"
+      >
+        <span className="gauge-fill" style={{ width: `${Math.min(1, seconds / span) * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function Queue({
   tickets,
   now,
   canAct,
-  avgServiceMinutes,
+  canIssue,
+  clearMinutes,
   onSkip,
+  onIssue,
 }: {
   tickets: TicketView[];
   now: number;
   canAct: boolean;
-  avgServiceMinutes: number | null;
+  canIssue: boolean;
+  clearMinutes: number;
   onSkip: (id: string) => void;
+  onIssue: () => void;
 }) {
   const { t, language } = useLocale();
-  const reduce = useReducedMotion();
-  const clear = tickets.length * (avgServiceMinutes ?? targetSeconds / 60);
   return (
-    <section
-      aria-labelledby="waiting-title"
-      className="surface flex min-h-0 flex-col overflow-hidden"
-    >
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-900/[0.06] px-5 py-3.5">
-        <div className="flex items-center gap-2.5">
-          <ListOrdered aria-hidden="true" className="size-[18px] text-muted" />
-          <h2 id="waiting-title" className="section-heading">
-            {t.waitingQueue}
-          </h2>
-          <span className="relative grid h-6 min-w-6 place-items-center overflow-hidden rounded-full bg-slate-900 px-1.5 text-xs font-extrabold text-white tabular-nums">
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.span
-                key={tickets.length}
-                initial={reduce ? false : { y: 12, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={reduce ? undefined : { y: -12, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              >
-                {formatNumber(tickets.length, language)}
-              </motion.span>
-            </AnimatePresence>
-          </span>
-        </div>
-        {tickets.length > 0 && (
-          <p className="flex items-center gap-1.5 text-xs font-bold text-muted tabular-nums">
-            <Clock3 aria-hidden="true" className="size-3.5" />
-            {t.estClear}
-            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-ink">
-              ~{formatWait(clear, language)}
-            </span>
-          </p>
-        )}
+    <section aria-labelledby="queue-title" className="desk-queue">
+      <div className="desk-queue-head">
+        <h2 id="queue-title" className="flex items-baseline gap-2.5">
+          <span className="sign text-xl font-semibold">{t.waiting}</span>
+          <span className="sign desk-count">{formatNumber(tickets.length, language)}</span>
+        </h2>
+        <button
+          type="button"
+          className="key key-sm"
+          disabled={!canIssue}
+          onClick={onIssue}
+          title={`${t.issue} (N)`}
+          aria-keyshortcuts="N"
+        >
+          <Plus aria-hidden="true" />
+          {t.walkin}
+          <kbd aria-hidden="true">N</kbd>
+        </button>
       </div>
-      {!tickets.length && (
-        <div className="grid flex-1 place-items-center content-center gap-3 p-8 text-center">
-          <span className="grid size-12 place-items-center rounded-2xl bg-slate-100 text-slate-500">
-            <ListOrdered className="size-5" aria-hidden="true" />
-          </span>
-          <p className="text-sm font-semibold">{t.quiet}</p>
-          <p className="max-w-[28ch] text-sm text-muted">{t.queueEmpty}</p>
-        </div>
+      {tickets.length > 0 && (
+        <p className="desk-clear">
+          {t.estClear} <strong className="num">{formatWait(clearMinutes, language)}</strong>
+        </p>
       )}
-      <ul
-        aria-labelledby="waiting-title"
-        tabIndex={0}
-        className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2.5 empty:hidden"
-      >
-        <AnimatePresence initial={false}>
+      {tickets.length === 0 ? (
+        <div className="desk-queue-empty">
+          <p className="font-bold">{t.quiet}</p>
+          <p className="muted">{t.queueEmpty}</p>
+        </div>
+      ) : (
+        <ol className="desk-list" aria-labelledby="queue-title">
           {tickets.map((item, index) => {
             const seconds = elapsed(now, item.issuedAt);
-            const level = pace(seconds).level;
             return (
-              <motion.li
-                key={item.id}
-                layout={reduce ? false : "position"}
-                initial={reduce ? false : { opacity: 0, x: -14 }}
-                animate={{
-                  opacity: 1,
-                  x: 0,
-                  transition: { delay: Math.min(index, 8) * 0.035 },
-                }}
-                exit={reduce ? undefined : { opacity: 0, x: 18, height: 0 }}
-                transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                className={`group rounded-xl border px-3 py-2 transition-colors hover:bg-slate-50 ${index === 0 ? "border-(--c-hue)/30 bg-(--c-soft)" : "border-transparent"}`}
-              >
-                <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_max-content_max-content] items-center gap-2.5">
-                  <span className="text-center text-xs font-bold text-slate-500 tabular-nums">
-                    {formatNumber(index + 1, language)}
-                  </span>
-                  <span
-                    className="min-w-0 break-all text-[1.05rem] font-extrabold tabular-nums"
-                    translate="no"
-                  >
-                    {item.tokenNumber}
-                  </span>
-                  <span
-                    className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${level === "late" ? "bg-rose-50 text-rose-800" : level === "warn" ? "bg-amber-50 text-amber-900" : "bg-slate-100 text-slate-700"}`}
-                  >
-                    <Clock3 aria-hidden="true" className="size-3" />
-                    {formatElapsed(seconds, language)}
-                  </span>
-                  <button
-                    type="button"
-                    className="btn btn-quiet min-h-8 px-2 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800 focus-visible:opacity-100 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
-                    disabled={!canAct}
-                    aria-label={`${t.skip} ${item.tokenNumber}`}
-                    onClick={() => onSkip(item.id)}
-                  >
-                    <SkipForward aria-hidden="true" />
-                    {t.skip}
-                  </button>
-                </div>
-                <div className="mt-1.5 ps-9 pe-1" aria-hidden="true">
-                  <PaceBar
-                    seconds={seconds}
-                    height="h-1"
-                    label={t.waitingLabel}
-                  />
-                </div>
-              </motion.li>
+              <li key={item.id} className="desk-item" data-first={index === 0}>
+                <span className="desk-pos num">{formatNumber(index + 1, language)}</span>
+                <span className="sign desk-token" translate="no">
+                  {item.tokenNumber}
+                </span>
+                <span className="desk-waited num" data-level={pace(seconds).level}>
+                  {formatElapsed(seconds, language)}
+                </span>
+                <button
+                  type="button"
+                  className="key key-quiet key-sm key-icon desk-skip"
+                  disabled={!canAct}
+                  aria-label={`${t.skip} ${item.tokenNumber}`}
+                  title={`${t.skip} ${item.tokenNumber}`}
+                  onClick={() => onSkip(item.id)}
+                >
+                  <SkipForward aria-hidden="true" />
+                </button>
+              </li>
             );
           })}
-        </AnimatePresence>
-      </ul>
+        </ol>
+      )}
     </section>
   );
 }
 
 function Desk({ workspace }: { workspace: Workspace }) {
   const { t, language } = useLocale();
-  const { data, selected, selectCounter, refresh, error, online, link } =
-    useDeskState(workspace.slug);
+  const { data, selected, selectCounter, refresh, error, online, link } = useDeskState(
+    workspace.slug,
+  );
   const [expired, setExpired] = useState(false);
-  const [demoNotice, setDemoNotice] = useState(true);
   const [busy, setBusy] = useState(false);
   const [help, setHelp] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -246,7 +195,6 @@ function Desk({ workspace }: { workspace: Workspace }) {
   const walkins = useRef(new Map<string, string>());
   const toast = useToast();
   const { notify } = toast;
-  const pill = useId();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -260,15 +208,19 @@ function Desk({ workspace }: { workspace: Workspace }) {
   const current = data?.selectedCounterId === selected;
   const active = current ? (data?.calledTicket ?? null) : null;
   const waiting = current ? (data?.waitingTickets ?? []) : [];
-  const canAct = Boolean(counter && current && online && !busy);
+  const canAct = Boolean(counter && current && online);
   const canIssue = canAct && counter?.status === "OPEN" && !expired;
   const next = waiting[0];
-  const theme = getCounterTheme(counter?.prefix ?? "A");
   const activeSeconds = active
     ? elapsed(now, active.firstCalledAt ?? active.calledAt ?? active.issuedAt)
     : 0;
+  const clearMinutes = estimatedWait(
+    waiting.length,
+    data?.typicalServiceSeconds ?? null,
+    active ? activeSeconds : null,
+  );
 
-  const perform = async (action: Action, ticketId?: string) => {
+  async function perform(action: Action, ticketId?: string) {
     if (!counter || !canAct || actionInProgress.current) return;
     const isIssuance = action === "ISSUE_WALKIN";
     if (isIssuance && !canIssue) return;
@@ -279,12 +231,8 @@ function Desk({ workspace }: { workspace: Workspace }) {
 
     actionInProgress.current = true;
     setBusy(true);
-    const body: {
-      action: Action;
-      counterId: string;
-      ticketId?: string;
-      idempotencyKey?: string;
-    } = { action, counterId: counter.id };
+    const body: { action: Action; counterId: string; ticketId?: string; idempotencyKey?: string } =
+      { action, counterId: counter.id };
     if (requiresTicket) body.ticketId = target;
     if (isIssuance) {
       const key = walkins.current.get(counter.id) ?? crypto.randomUUID();
@@ -293,44 +241,41 @@ function Desk({ workspace }: { workspace: Workspace }) {
     }
 
     try {
-      const result = await api<{
-        ticket?: TicketView | null;
-        counter?: { status: string };
-      }>("/api/desk/action", jsonRequest("POST", body));
+      const result = await api<{ ticket?: TicketView | null; counter?: { status: string } }>(
+        "/api/desk/action",
+        jsonRequest("POST", body),
+      );
       if (isIssuance) walkins.current.delete(counter.id);
-      const message = {
-        ISSUE_WALKIN: t.issuedNotice,
-        CALL_NEXT: result.ticket ? t.calledNotice : t.noneWaiting,
-        COMPLETE: t.servedNotice,
-        RECALL: t.recalled,
-        SKIP: t.skippedNotice,
-        TOGGLE_PAUSE:
-          result.counter?.status === "OPEN" ? t.opened : t.pausedNotice,
-      }[action];
-      notify(message);
-      await refresh();
+      notify(
+        {
+          ISSUE_WALKIN: result.ticket
+            ? `${t.issuedNotice} ${result.ticket.tokenNumber}`
+            : t.issuedNotice,
+          CALL_NEXT: result.ticket ? `${t.calledNotice} ${result.ticket.tokenNumber}` : t.noneWaiting,
+          COMPLETE: t.servedNotice,
+          RECALL: t.recalled,
+          SKIP: t.skippedNotice,
+          TOGGLE_PAUSE: result.counter?.status === "OPEN" ? t.opened : t.pausedNotice,
+        }[action],
+      );
+      // Unlock as soon as the server confirms; the follow-up refresh must not swallow the next key.
+      void refresh();
     } catch (failure) {
       if (failure instanceof ApiError && failure.status < 500 && isIssuance)
         walkins.current.delete(counter.id);
-      if (failure instanceof ApiError && failure.status === 402)
-        setExpired(true);
+      if (failure instanceof ApiError && failure.status === 402) setExpired(true);
       else
         notify(
-          failure instanceof ApiError && language === "en"
-            ? failure.message
-            : t.error,
+          failure instanceof ApiError && language === "en" ? failure.message : t.error,
           true,
         );
-      if (
-        failure instanceof ApiError &&
-        (failure.status === 404 || failure.status === 409)
-      )
-        await refresh();
+      if (failure instanceof ApiError && (failure.status === 404 || failure.status === 409))
+        void refresh();
     } finally {
       actionInProgress.current = false;
       setBusy(false);
     }
-  };
+  }
 
   const defaulted = useRef(false);
   const firstId = counters[0]?.id;
@@ -341,489 +286,276 @@ function Desk({ workspace }: { workspace: Workspace }) {
     if (data?.selectedCounterId !== firstId) selectCounter(firstId);
   }, [data?.selectedCounterId, firstId, selectCounter]);
 
-  const performRef = useRef(perform);
-  useEffect(() => {
-    performRef.current = perform;
-  });
-
-  useEffect(() => {
-    function keyDown(event: KeyboardEvent) {
-      if (
-        event.defaultPrevented ||
-        event.isComposing ||
-        event.repeat ||
-        event.altKey ||
-        event.ctrlKey ||
-        event.metaKey
-      )
-        return;
-      const target = event.target;
-      if (
-        !(target instanceof HTMLElement) ||
-        target.isContentEditable ||
-        target.closest("input, textarea, select, [role='textbox'], dialog") ||
-        document.querySelector("dialog[open]")
-      )
-        return;
-      if (event.key === "?") {
-        event.preventDefault();
-        setHelp(true);
-        return;
-      }
-      if (event.shiftKey) return;
-      const action = shortcuts[event.key] ?? shortcuts[event.key.toLowerCase()];
-      if (!action || !canAct || (action === "ISSUE_WALKIN" && !canIssue))
-        return;
-      if (
-        action === "CALL_NEXT" &&
-        (target.closest("button, a, [role='button']") || !next)
-      )
-        return;
-      if (["COMPLETE", "SKIP", "RECALL"].includes(action) && !active) return;
+  // An Effect Event always sees this render's state, so the listener is attached once.
+  const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
+    if (
+      event.defaultPrevented ||
+      event.isComposing ||
+      event.repeat ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey
+    )
+      return;
+    const target = event.target;
+    if (
+      !(target instanceof HTMLElement) ||
+      target.isContentEditable ||
+      target.closest("input, textarea, select, [role='textbox'], dialog") ||
+      document.querySelector("dialog[open]")
+    )
+      return;
+    if (event.key === "?") {
       event.preventDefault();
-      void performRef.current(action);
+      setHelp(true);
+      return;
     }
-    document.addEventListener("keydown", keyDown);
-    return () => document.removeEventListener("keydown", keyDown);
-  }, [active, canAct, canIssue, next]);
+    if (event.shiftKey) return;
+    const action = shortcuts[event.key] ?? shortcuts[event.key.toLowerCase()];
+    if (!action || !canAct || (action === "ISSUE_WALKIN" && !canIssue)) return;
+    if (action === "CALL_NEXT" && (target.closest("button, a, [role='button']") || !next)) return;
+    if (["COMPLETE", "SKIP", "RECALL"].includes(action) && !active) return;
+    event.preventDefault();
+    void perform(action);
+  });
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => onKeyDown(event);
+    document.addEventListener("keydown", listener);
+    return () => document.removeEventListener("keydown", listener);
+  }, []);
 
-  const menuItem = "menu-item";
+  const reconnecting = !online || link === "reconnecting";
+  const links = [
+    [`/display/${workspace.slug}`, t.tv, Monitor],
+    [`/join/${workspace.slug}`, t.joinLink, QrCode],
+    [`/kiosk/${workspace.slug}`, t.kiosk, Tablet],
+    [`/print/${workspace.slug}/qr`, t.printA4, Printer],
+  ] as const;
+
   return (
     <div
-      className="flex min-h-dvh flex-col bg-canvas lg:h-dvh lg:overflow-hidden"
-      style={counterVars(theme)}
+      className="desk"
+      aria-busy={busy}
+      style={counterVars(getCounterTheme(counter?.prefix ?? "A"))}
     >
-      <header className="z-20 shrink-0 border-b border-slate-900/[0.07] bg-white/85 backdrop-blur-xl">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 lg:h-[3.75rem] lg:flex-nowrap lg:px-6 lg:py-0">
-          <Wordmark />
-          <span
-            className="hidden max-w-[20ch] truncate rounded-md bg-slate-900/[0.05] px-2 py-1 text-xs font-bold text-slate-700 xl:block"
-            title={workspace.name}
+      <header className="desk-bar">
+        <Link href="/desk" className="desk-mark" aria-label="QueueWindow">
+          <QueueMark size={26} />
+        </Link>
+        <p className="desk-org" title={workspace.name}>
+          <span className="truncate">{workspace.name}</span>
+          {workspace.demo && <span className="muted shrink-0 font-semibold">· {t.liveDemo}</span>}
+        </p>
+        <h1 className="sr-only">{t.desk}</h1>
+        {reconnecting && (
+          <p role="status" className="desk-link">
+            {online ? t.reconnecting : t.offline}
+          </p>
+        )}
+        <div className="desk-tools">
+          <time className="sign desk-clock" dateTime={new Date(now).toISOString()}>
+            {formatClock(new Date(now), language)}
+          </time>
+          {counter && (
+            <button
+              type="button"
+              className="key key-sm desk-toggle"
+              disabled={!canAct}
+              aria-label={counter.status === "OPEN" ? t.pause : t.resume}
+              title={`${counter.status === "OPEN" ? t.pause : t.resume} (P)`}
+              aria-keyshortcuts="P"
+              onClick={() => void perform("TOGGLE_PAUSE")}
+            >
+              <span className="state" data-state={counter.status}>
+                {counter.status === "OPEN" ? t.open : t.paused}
+              </span>
+              <kbd aria-hidden="true">P</kbd>
+            </button>
+          )}
+          <LanguageSwitch />
+          <FullscreenToggle labels={{ enter: t.fullscreen, exit: t.exitFullscreen }} />
+          <Popover
+            label={t.menu}
+            triggerClassName="key key-sm key-icon"
+            trigger={<Menu aria-hidden="true" />}
           >
-            {workspace.name}
-          </span>
-          <h1 className="sr-only">
-            {t.desk}
-          </h1>
-          <div
-            role="group"
-            aria-label={t.counter}
-            className="order-last flex w-full min-w-0 items-center gap-1 overflow-x-auto [scrollbar-width:none] rounded-xl bg-slate-900/[0.045] p-1 lg:order-none lg:mx-auto lg:w-auto lg:max-w-[46%]"
-          >
-            {counters.map((item) => {
-              const on = item.id === selected;
-              return (
+            {(close) => (
+              <nav aria-label={t.menu}>
+                <p className="menu-caption">
+                  <strong className="block text-[0.9375rem] text-(--fg)">{workspace.name}</strong>
+                  {workspace.role === "OWNER" ? t.owner : t.staff}
+                </p>
+                <div className="menu-rule" />
+                {links.map(([href, label, Icon]) => (
+                  <a
+                    key={href}
+                    className="menu-item"
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={close}
+                  >
+                    <Icon aria-hidden="true" />
+                    {label}
+                  </a>
+                ))}
+                <div className="menu-rule" />
+                {workspace.role === "OWNER" && (
+                  <Link className="menu-item" href="/admin" onClick={close}>
+                    <Settings2 aria-hidden="true" />
+                    {t.admin}
+                  </Link>
+                )}
                 <button
-                  key={item.id}
                   type="button"
-                  aria-pressed={on}
-                  disabled={busy}
-                  title={item.name}
-                  aria-label={item.name}
-                  onClick={() => selectCounter(item.id)}
-                  className={`relative flex min-h-9 shrink-0 items-center gap-2 rounded-lg ps-1.5 pe-3 text-sm font-bold ${on ? "text-ink" : "text-muted hover:text-ink"}`}
+                  className="menu-item"
+                  onClick={() => {
+                    close();
+                    setHelp(true);
+                  }}
                 >
-                  {on && (
-                    <motion.span
-                      layoutId={pill}
-                      className="absolute inset-0 rounded-lg bg-white shadow-[0_1px_3px_rgba(15,23,42,0.14)]"
-                      style={{
-                        boxShadow: `0 0 0 1.5px ${getCounterTheme(item.prefix).hue}, 0 4px 12px -4px ${getCounterTheme(item.prefix).glow}`,
-                      }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 36,
-                      }}
-                    />
-                  )}
-                  <CounterBadge
-                    prefix={item.prefix}
-                    size="sm"
-                    className="relative"
-                  />
-                  <span className="relative max-w-[11ch] truncate">
-                    {item.name}
-                  </span>
-                  {item.status === "PAUSED" && (
-                    <span
-                      className="relative size-1.5 rounded-full bg-amber-500"
-                      aria-hidden="true"
-                    />
-                  )}
+                  <Keyboard aria-hidden="true" />
+                  {t.shortcuts}
+                  <kbd>?</kbd>
                 </button>
-              );
-            })}
-            {!counters.length && (
-              <span className="px-3 text-sm text-muted">—</span>
+                <div className="menu-rule" />
+                <form action="/api/auth/logout" method="post">
+                  <button type="submit" className="menu-item">
+                    <LogOut aria-hidden="true" />
+                    {t.logout}
+                  </button>
+                </form>
+              </nav>
             )}
-          </div>
-          <div className="ms-auto flex items-center gap-1 sm:gap-1.5">
-            {counter && <StatusPill status={counter.status} />}
-            <Popover
-              label={t.displaysQr}
-              trigger={
-                <>
-                  <Monitor aria-hidden="true" />
-                  <span className="hidden whitespace-nowrap 2xl:inline">{t.displaysQr}</span>
-                  <ChevronDown aria-hidden="true" className="!size-3.5" />
-                </>
-              }
-            >
-              {(close) => (
-                <nav aria-label={t.displaysQr} className="grid">
-                  {[
-                    [`/display/${workspace.slug}`, t.tv, Monitor],
-                    [`/join/${workspace.slug}`, t.joinLink, QrCode],
-                    [`/print/${workspace.slug}/qr`, t.printA4, Printer],
-                    [`/kiosk/${workspace.slug}`, t.kiosk, Tablet],
-                  ].map(([href, label, Icon]) => {
-                    const Glyph = Icon as typeof Monitor;
-                    return (
-                      <a
-                        key={href as string}
-                        className={menuItem}
-                        href={href as string}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={close}
-                      >
-                        <Glyph aria-hidden="true" />
-                        {label as string}
-                      </a>
-                    );
-                  })}
-                </nav>
-              )}
-            </Popover>
-            <FullscreenToggle
-              labels={{ enter: t.fullscreen, exit: t.exitFullscreen }}
-            />
-            <LanguageSwitch />
-            {workspace.role === "OWNER" && (
-              <Link
-                className="btn btn-quiet min-h-9 px-2.5"
-                href="/admin"
-                title={t.admin}
-              >
-                <Settings2 aria-hidden="true" />
-                <span className="hidden 2xl:inline">{t.admin}</span>
-                <span className="sr-only 2xl:hidden">{t.admin}</span>
-              </Link>
-            )}
-            <Popover
-              label={t.account}
-              triggerClassName="btn min-h-9 gap-1.5 rounded-full px-2.5"
-              trigger={
-                <>
-                  <User aria-hidden="true" />
-                  <ChevronDown aria-hidden="true" className="!size-3.5" />
-                </>
-              }
-            >
-              {() => (
-                <div className="grid">
-                  <p className="px-3 pt-2 pb-1 text-sm font-extrabold">
-                    {workspace.name}
-                  </p>
-                  <p className="px-3 pb-2 text-xs font-semibold text-muted">
-                    {workspace.role === "OWNER" ? "Owner" : t.staff}
-                  </p>
-                  <form action="/api/auth/logout" method="post">
-                    <button
-                      type="submit"
-                      className={`${menuItem} w-full text-rose-700`}
-                    >
-                      <LogOut aria-hidden="true" />
-                      {t.logout}
-                    </button>
-                  </form>
-                </div>
-              )}
-            </Popover>
-          </div>
+          </Popover>
         </div>
       </header>
 
-      <main
-        id="main"
-        className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-3 lg:px-6 lg:py-4"
-      >
-        {workspace.demo && demoNotice && (
-          <div className="flex justify-center">
-            <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-teal-200 bg-teal-50 py-0.5 ps-3.5 pe-1 text-xs text-teal-950">
-              <span
-                className="live-dot !size-1.5 !bg-teal-500"
-                aria-hidden="true"
-              />
-              <strong>{t.liveDemo}</strong>
-              <span className="hidden min-w-0 truncate sm:inline">
-                {t.demoDetail}
-              </span>
+      {error && !data ? (
+        <main id="main" className="desk-blank">
+          <Notice title={error} tone="error" />
+          <button type="button" className="key" onClick={() => void refresh()}>
+            {t.retry}
+          </button>
+        </main>
+      ) : !data ? (
+        <main id="main" className="desk-blank" aria-busy="true">
+          <p className="muted">{t.loadingQueue}</p>
+        </main>
+      ) : !counters.length ? (
+        <main id="main" className="desk-blank">
+          <p className="sign text-2xl font-semibold">{t.noCounters}</p>
+          <p className="muted">{t.noCountersDetail}</p>
+          {workspace.role === "OWNER" && (
+            <Link className="key key-primary" href="/admin?section=counters">
+              {t.newCounter}
+            </Link>
+          )}
+        </main>
+      ) : (
+        <main id="main" className="desk-body">
+          <nav className="desk-rail" aria-label={t.counter}>
+            {counters.map((item) => (
               <button
+                key={item.id}
                 type="button"
-                className="btn btn-quiet min-h-7 rounded-full px-1.5"
-                aria-label={t.dismiss}
-                onClick={() => setDemoNotice(false)}
+                className="desk-rail-item"
+                aria-pressed={item.id === selected}
+                onClick={() => {
+                  if (!busy) selectCounter(item.id);
+                }}
               >
-                <X aria-hidden="true" />
+                <Plate prefix={item.prefix} />
+                <span className="desk-rail-name">{item.name}</span>
+                {item.status === "PAUSED" && (
+                  <span className="state desk-rail-state" data-state="PAUSED">
+                    {t.paused}
+                  </span>
+                )}
               </button>
+            ))}
+          </nav>
+
+          <section className="desk-serve" aria-labelledby="serve-title">
+            <div className="desk-serve-head">
+              {counter && <Plate prefix={counter.prefix} />}
+              <h2 id="serve-title" className="sign text-xl font-semibold">
+                {counter?.name}
+              </h2>
             </div>
-          </div>
-        )}
-        <div className="space-y-2 empty:hidden">
-          {!online && <Notice title={t.offline}>{t.offlineDetail}</Notice>}
-          {online && link === "reconnecting" && (
-            <Notice title={t.reconnecting}>{t.reconnectDetail}</Notice>
-          )}
-          {expired && (
-            <Notice title={t.expired} tone="error">
-              {t.expiredDetail}
-            </Notice>
-          )}
-          {error && online && (
-            <Notice title={language === "en" ? error : t.error} tone="error">
+
+            <div className="desk-now">
+              <p className="caps">{t.active}</p>
+              {active ? (
+                <>
+                  <Drum value={active.tokenNumber} className="sign desk-now-token" />
+                  <ServiceGauge seconds={activeSeconds} />
+                </>
+              ) : (
+                <p className="sign desk-now-idle">
+                  {counter?.status === "PAUSED" ? t.pausedIdle : t.noActive}
+                </p>
+              )}
+            </div>
+
+            <div className="desk-actions">
+              {expired && <Notice title={t.expired}>{t.expiredDetail}</Notice>}
               <button
                 type="button"
-                className="btn mt-2"
-                onClick={() => void refresh()}
+                className="key key-primary desk-call"
+                disabled={!canAct || !next}
+                aria-keyshortcuts="Space Enter"
+                onClick={() => void perform("CALL_NEXT")}
               >
-                {t.retry}
-              </button>
-            </Notice>
-          )}
-        </div>
-        {!data && !error && (
-          <div
-            role="status"
-            aria-label={t.loadingQueue}
-            className="grid min-h-0 flex-1 animate-pulse gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]"
-          >
-            <div className="rounded-2xl bg-slate-200/70" />
-            <div className="rounded-2xl bg-slate-200/50" />
-          </div>
-        )}
-        {data && !counter && (
-          <div className="surface p-6">
-            <h2 className="section-heading">{t.noCounters}</h2>
-            <p className="mt-1 text-sm text-muted">{t.noCountersDetail}</p>
-          </div>
-        )}
-        {counter && (
-          <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
-            <section
-              className="flex min-h-0 flex-col gap-3"
-              aria-labelledby="active-title"
-              aria-busy={!current}
-            >
-              <div className="relative flex min-h-64 flex-1 flex-col justify-between gap-3 overflow-hidden rounded-3xl bg-obsidian p-5 text-white shadow-[0_1px_2px_rgba(15,23,42,0.2),0_24px_50px_-20px_rgba(15,23,42,0.6),inset_0_1px_0_rgba(255,255,255,0.07)] sm:p-6">
-                <div
-                  aria-hidden="true"
-                  className={`pointer-events-none absolute inset-0 transition-opacity duration-700 ${active ? "opacity-100" : "opacity-40"}`}
-                  style={{
-                    background:
-                      "radial-gradient(65% 75% at 50% 42%, var(--c-glow), transparent 72%)",
-                  }}
-                />
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-x-0 top-0 h-1.5"
-                  style={{ background: "var(--c-hue)" }}
-                />
-                <div className="relative flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <CounterBadge prefix={counter.prefix} size="md" />
-                    <h2
-                      id="active-title"
-                      className="text-sm font-extrabold tracking-wide text-slate-200"
-                    >
-                      {t.active}
-                    </h2>
-                  </div>
-                  {active && (
-                    <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-extrabold text-(--c-accent) ring-1 ring-white/15 ring-inset">
-                      {t.activeStatus}
-                    </span>
-                  )}
-                </div>
-
-                <div className="relative grid flex-1 place-items-center overflow-hidden py-1">
-                  <AnimatePresence initial={false} mode="wait">
-                    {active ? (
-                      <motion.p
-                        key={active.id + active.tokenNumber}
-                        aria-live="polite"
-                        initial={{ opacity: 0, y: 32, scale: 0.94 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{
-                          opacity: 0,
-                          y: -32,
-                          scale: 0.94,
-                          transition: { duration: 0.1 },
-                        }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 380,
-                          damping: 26,
-                        }}
-                        className="break-all text-center text-[clamp(4rem,min(11vw,22dvh),8.5rem)] leading-none font-extrabold -tracking-[.04em] text-(--c-accent) tabular-nums drop-shadow-[0_0_30px_var(--c-glow)]"
-                        translate="no"
-                      >
-                        {active.tokenNumber}
-                      </motion.p>
-                    ) : (
-                      <motion.div
-                        key="idle"
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="grid justify-items-center gap-2 text-center"
-                      >
-                        <span className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/5 text-slate-300">
-                          <Ticket className="size-5" aria-hidden="true" />
-                        </span>
-                        <p className="text-xl font-extrabold tracking-tight">
-                          {t.noActive}
-                        </p>
-                        <p className="text-sm text-slate-300">{t.ready}</p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="relative grid gap-2.5">
-                  {active ? (
-                    <>
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold text-slate-200">
-                        <p className="flex items-center gap-2">
-                          <Clock3 className="size-4" aria-hidden="true" />
-                          {t.elapsed}
-                          <span className="rounded-md bg-white/10 px-2 py-0.5 font-extrabold text-white tabular-nums">
-                            {formatElapsed(activeSeconds, language)}
-                          </span>
-                        </p>
-                        <p className="text-xs text-slate-300 tabular-nums">
-                          {formatNumber(
-                            Math.round((100 * activeSeconds) / targetSeconds),
-                            language,
-                          )}
-                          % {t.targetOf}{" "}
-                          {formatWait(targetSeconds / 60, language)}
-                        </p>
-                      </div>
-                      <PaceBar
-                        seconds={activeSeconds}
-                        track="bg-white/12"
-                        height="h-2"
-                        label={t.elapsed}
-                      />
-                    </>
-                  ) : null}
-                  <p className="flex items-baseline justify-end gap-2 text-end">
-                    <span className="text-xs font-bold text-slate-300">
-                      {t.next}
-                    </span>
-                    <span className="break-all text-base font-extrabold tabular-nums">
-                      {next?.tokenNumber ?? t.noneWaiting}
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="surface shrink-0 p-3">
-                <motion.button
-                  type="button"
-                  className="btn btn-counter min-h-14 w-full text-base"
-                  disabled={!canAct || !next}
-                  aria-keyshortcuts="Space Enter"
-                  whileTap={{ scale: 0.97 }}
-                  whileHover={{ y: -1 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 28 }}
-                  onClick={() => void perform("CALL_NEXT")}
-                >
-                  <ArrowRight aria-hidden="true" />
+                <span className="desk-call-label">
                   {t.call}
-                </motion.button>
-                <div className="mt-2 grid grid-cols-3 gap-2">
+                  <span className="desk-call-sub">
+                    {next
+                      ? active
+                        ? `${t.completes} ${active.tokenNumber} · ${t.nextUp} ${next.tokenNumber}`
+                        : `${t.nextUp} ${next.tokenNumber}`
+                      : t.noneWaiting}
+                  </span>
+                </span>
+                <span className="desk-call-keys" aria-hidden="true">
+                  <kbd>Space</kbd>
+                </span>
+              </button>
+              <div className="desk-secondary">
+                {(
+                  [
+                    ["COMPLETE", t.complete, "C"],
+                    ["RECALL", t.recall, "R"],
+                    ["SKIP", t.skip, "S"],
+                  ] as const
+                ).map(([action, label, key]) => (
                   <button
+                    key={action}
                     type="button"
-                    className="btn min-w-0 px-2"
+                    className={`key ${action === "SKIP" ? "key-danger" : ""}`}
                     disabled={!canAct || !active}
-                    aria-keyshortcuts="C"
-                    onClick={() => void perform("COMPLETE")}
+                    aria-keyshortcuts={key}
+                    onClick={() => void perform(action)}
                   >
-                    <Check aria-hidden="true" />
-                    {t.complete}
+                    {label}
+                    <kbd aria-hidden="true">{key}</kbd>
                   </button>
-                  <button
-                    type="button"
-                    className="btn min-w-0 px-2"
-                    disabled={!canAct || !active}
-                    aria-keyshortcuts="R"
-                    onClick={() => void perform("RECALL")}
-                  >
-                    <Bell aria-hidden="true" />
-                    {t.recall}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-danger min-w-0 px-2"
-                    disabled={!canAct || !active}
-                    aria-keyshortcuts="S"
-                    onClick={() => void perform("SKIP")}
-                  >
-                    <SkipForward aria-hidden="true" />
-                    {t.skip}
-                  </button>
-                </div>
-                <div className="mt-2 flex items-center gap-2 border-t border-slate-900/[0.06] pt-2">
-                  <button
-                    type="button"
-                    className="btn btn-quiet min-h-9"
-                    disabled={!canIssue}
-                    aria-label={t.issue}
-                    aria-keyshortcuts="N"
-                    onClick={() => void perform("ISSUE_WALKIN")}
-                  >
-                    <Plus aria-hidden="true" />
-                    {t.walkin}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-quiet min-h-9"
-                    disabled={!canAct}
-                    aria-keyshortcuts="P"
-                    onClick={() => void perform("TOGGLE_PAUSE")}
-                  >
-                    {counter.status === "OPEN" ? (
-                      <Pause aria-hidden="true" />
-                    ) : (
-                      <Play aria-hidden="true" />
-                    )}
-                    {counter.status === "OPEN" ? t.pause : t.resume}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-quiet ms-auto min-h-9 px-2.5"
-                    aria-label={t.shortcuts}
-                    title={`${t.shortcuts} (?)`}
-                    onClick={() => setHelp(true)}
-                  >
-                    <CircleHelp aria-hidden="true" />
-                  </button>
-                </div>
+                ))}
               </div>
-            </section>
-            <WaitingQueue
-              now={now}
-              tickets={waiting}
-              canAct={canAct}
-              avgServiceMinutes={data?.stats?.avgServiceMinutes ?? null}
-              onSkip={(id) => void perform("SKIP", id)}
-            />
-          </div>
-        )}
-      </main>
+            </div>
+          </section>
+
+          <Queue
+            tickets={waiting}
+            now={now}
+            canAct={canAct}
+            canIssue={canIssue}
+            clearMinutes={clearMinutes}
+            onSkip={(id) => void perform("SKIP", id)}
+            onIssue={() => void perform("ISSUE_WALKIN")}
+          />
+        </main>
+      )}
       {help && <ShortcutsModal onClose={() => setHelp(false)} />}
       <Toast toast={toast} />
     </div>

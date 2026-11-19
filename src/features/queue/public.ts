@@ -2,9 +2,9 @@ import { and, asc, count, eq, sql } from "drizzle-orm";
 import type { Database } from "@/db";
 import { counters, organizations, tickets } from "@/db/schema";
 import { AppError } from "@/lib/app-error";
-import { serviceSeconds } from "./read-model";
+import { typicalService } from "./read-model";
 import { estimatedWait } from "./rules";
-import { ticketMissing, ticketScope, today } from "./store";
+import { ticketMissing, ticketScope } from "./store";
 
 export async function organizationBySlug(db: Database, slug: string) {
   const [organization] = await db
@@ -24,6 +24,9 @@ export async function displaySnapshot(db: Database, slug: string) {
     .select({
       tokenNumber: tickets.tokenNumber,
       calledAt: tickets.calledAt,
+      elapsed: sql<number>`extract(epoch from (statement_timestamp() - ${tickets.firstCalledAt}))::float8`.as(
+        "elapsed",
+      ),
     })
     .from(tickets)
     .where(and(scope, eq(tickets.status, "CALLED")))
@@ -55,10 +58,8 @@ export async function displaySnapshot(db: Database, slug: string) {
         sql<number>`(select count(*) from ${tickets} where ${scope} and ${tickets.status} = 'WAITING')`.mapWith(
           Number,
         ),
-      // Read-only display hint for visitors choosing a counter.
-      avgServiceSeconds: sql<
-        number | null
-      >`(select avg(${serviceSeconds})::float8 from ${tickets} where ${scope} and ${tickets.businessDate} = ${today} and ${tickets.status} = 'SERVED')`,
+      typicalServiceSeconds: typicalService(scope),
+      activeElapsed: active.elapsed,
     })
     .from(organizations)
     .leftJoin(counters, eq(counters.orgId, organizations.id))
@@ -77,7 +78,12 @@ export async function displaySnapshot(db: Database, slug: string) {
               calledTicket: row.called,
               waitingTokens: row.waitingTokens ?? [],
               waitingCount: row.waitingCount,
-              avgServiceSeconds: row.avgServiceSeconds,
+              // What a visitor joining now should expect; computed once, here.
+              estimatedWaitMinutes: estimatedWait(
+                row.waitingCount,
+                row.typicalServiceSeconds,
+                row.called?.tokenNumber ? (row.activeElapsed ?? 0) : null,
+              ),
             },
           ]
         : [],
@@ -134,24 +140,14 @@ export function visitorTicket(db: Database, orgId: string, ticketId: string) {
         .from(tickets)
         .where(and(scope, eq(tickets.status, "CALLED")));
       const [service] = await tx
-        .select({
-          average: sql<number | null>`avg(${serviceSeconds})::float8`,
-        })
-        .from(tickets)
-        .where(
-          and(
-            scope,
-            eq(tickets.businessDate, today),
-            eq(tickets.status, "SERVED"),
-          ),
-        );
-
+        .select({ typical: typicalService(scope) })
+        .from(sql`(select 1) as one`);
       return {
         ...publicTicket,
         peopleAhead: waiting.count + (called ? 1 : 0),
         estimatedWaitMinutes: estimatedWait(
           waiting.count,
-          service.average,
+          service.typical,
           called?.elapsed ?? null,
         ),
       };

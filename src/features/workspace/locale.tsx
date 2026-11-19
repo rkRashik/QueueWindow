@@ -1,11 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
   createContext,
   useContext,
   useEffect,
-  useId,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -66,13 +64,8 @@ export function useLocale() {
 
 export function LanguageSwitch() {
   const { language, t } = useLocale();
-  const pill = useId();
   return (
-    <div
-      role="group"
-      aria-label={t.language}
-      className="inline-flex shrink-0 gap-0.5 rounded-full border border-line bg-slate-100 p-0.5"
-    >
+    <div role="group" aria-label={t.language} className="seg">
       {(
         [
           ["en", "EN"],
@@ -84,17 +77,9 @@ export function LanguageSwitch() {
           type="button"
           lang={code}
           aria-pressed={language === code}
-          className={`relative min-h-8 rounded-full px-2.5 text-xs font-extrabold ${language === code ? "text-ink" : "text-muted hover:text-ink"}`}
           onClick={() => select(code)}
         >
-          {language === code && (
-            <motion.span
-              layoutId={pill}
-              className="absolute inset-0 rounded-full bg-white shadow-[0_1px_3px_rgba(15,23,42,0.15)]"
-              transition={{ type: "spring", stiffness: 500, damping: 36 }}
-            />
-          )}
-          <span className="relative">{label}</span>
+          {label}
         </button>
       ))}
     </div>
