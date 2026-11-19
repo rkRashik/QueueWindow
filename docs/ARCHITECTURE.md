@@ -25,3 +25,10 @@ Five-second visible-page polling is not instantaneous delivery. Demo queues expi
 ## Counter timing and preferences
 
 The queue snapshot reads call, recall and service-start times from ticket events. Older active tickets without a matching call event show no call timer until called again. Display and print preferences use a queue-owned record with defaults for existing queues. Preference changes and repeat calls use the same versioned transactions as other staff actions.
+
+
+## Public admission
+
+The public join route uses the same random venue identifier as the read-only display. Self-service is off by default. Once staff enable it, anyone with the venue link can request a ticket. Public admission accepts only a request key. It has separate admission limits per venue and client, checks pause and self-service settings inside the write transaction, and uses the same FIFO allocation as staff. Public idempotency keys have their own namespace and return only the ticket number and private visitor token. Visitor tokens never appear in the public display payload.
+
+The phone and kiosk use the same endpoint. A pending request key can survive a reload in the same tab. The shared kiosk clears a completed result on Done or after a timeout. It prints through the browser and relies on the device printer configuration. A venue must supply a reachable HTTPS origin for QR use outside the kiosk device.

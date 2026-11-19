@@ -7,6 +7,7 @@ import {
   queueSnapshot,
   visitorSnapshot,
   publicSnapshot,
+  joinQueue,
 } from "../src/lib/queue";
 import { allowedTransition } from "../src/lib/domain";
 import { randomUUID } from "node:crypto";
@@ -36,6 +37,33 @@ describe("ticket rules", () => {
   });
 });
 describe("database behavior", () => {
+  it("gates public admission, allocates FIFO numbers, and safely retries after pausing", async () => {
+    const initial = await queueSnapshot(db, id);
+    const key = randomUUID();
+    await expect(joinQueue(db, initial.displayId, key)).rejects.toThrow();
+    await mutateQueue(
+      db,
+      id,
+      command("settings", {
+        version: initial.version,
+        name: "Reception",
+        desk: "Desk 01",
+        message: "",
+        preferences: { ...initial.preferences, selfService: true },
+      }),
+    );
+    await mutateQueue(db, id, command("issue"));
+    const result = await joinQueue(db, initial.displayId, key);
+    expect(result.number).toBe(2);
+    expect((await visitorSnapshot(db, result.token)).ahead).toBe(1);
+    const after = await queueSnapshot(db, id);
+    await mutateQueue(db, id, command("pause", { version: after.version }));
+    expect(await joinQueue(db, initial.displayId, key)).toEqual(result);
+    await expect(
+      joinQueue(db, initial.displayId, randomUUID()),
+    ).rejects.toThrow();
+    expect((await queueSnapshot(db, id)).tickets).toHaveLength(2);
+  });
   it("issues unique numbers and replays a command without duplicating", async () => {
     const c = command("issue");
     const a = await mutateQueue(db, id, c);

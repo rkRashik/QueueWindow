@@ -7,8 +7,21 @@ export type Ticket = {
   issuedAt: number;
   finishedAt: number | null;
 };
+export const displayThemes = [
+  "midnight",
+  "paper",
+  "river",
+  "clay",
+  "plum",
+] as const;
+export const chimeStyles = ["bell", "marimba", "soft"] as const;
 export type Preferences = {
-  theme: "midnight" | "paper";
+  theme: (typeof displayThemes)[number];
+  chimeStyle: (typeof chimeStyles)[number];
+  displayLanguage: "en" | "bn";
+  showTiming: boolean;
+  serviceTarget: number;
+  selfService: boolean;
   upcoming: number;
   chime: boolean;
   printFooter: string;
@@ -16,6 +29,11 @@ export type Preferences = {
 };
 export const defaultPreferences: Preferences = {
   theme: "midnight",
+  chimeStyle: "bell",
+  displayLanguage: "en",
+  showTiming: false,
+  serviceTarget: 0,
+  selfService: false,
   upcoming: 4,
   chime: false,
   printFooter: "",
@@ -50,7 +68,19 @@ export type VisitorView = {
   version: number;
   demo: boolean;
 };
+export type AdmissionView = {
+  version: number;
+  name: string;
+  desk: string;
+  open: boolean;
+  footer: string;
+  message: string;
+};
+export type PublicTicket = { number: number; token: string };
 export type DisplayView = {
+  language: Preferences["displayLanguage"];
+  chimeStyle: Preferences["chimeStyle"];
+  selfService: boolean;
   theme: Preferences["theme"];
   chime: boolean;
   name: string;

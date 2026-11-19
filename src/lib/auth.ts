@@ -6,10 +6,7 @@ export const SESSION_COOKIE = "qw_session";
 export async function staffQueue() {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token)
-    throw new AppError(
-      "Your session has ended. Sign in or start a fresh demo.",
-      401,
-    );
+    throw new AppError("Your session has ended. Please sign in again.", 401);
   const db = await database();
   const row = (
     await db.execute({
@@ -18,10 +15,7 @@ export async function staffQueue() {
     })
   ).rows[0];
   if (!row)
-    throw new AppError(
-      "Your session has ended. Sign in or start a fresh demo.",
-      401,
-    );
+    throw new AppError("Your session has ended. Please sign in again.", 401);
   return String(row.queue_id);
 }
 export async function setSession(queueId: string) {

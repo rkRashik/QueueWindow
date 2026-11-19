@@ -1,9 +1,10 @@
 ﻿"use client";
 
-import { ArrowRight, Maximize, Minimize, Volume2 } from "lucide-react";
+import { ArrowRight, Maximize, Minimize, Volume2, QrCode } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { usePoll } from "@/lib/client";
 import type { DisplayView } from "@/lib/domain";
+import { enableSound, playChime } from "./chime";
 import { business, desk, Number, Offline, State } from "./ui";
 
 export function Board({ id }: { id: string }) {
@@ -45,14 +46,7 @@ export function Board({ id }: { id: string }) {
       context.state !== "running"
     )
       return;
-    const tone = context.createOscillator();
-    const gain = context.createGain();
-    tone.frequency.value = 660;
-    gain.gain.setValueAtTime(0.1, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.35);
-    tone.connect(gain).connect(context.destination);
-    tone.start();
-    tone.stop(context.currentTime + 0.35);
+    playChime(context, queue.chimeStyle);
   }, [announcement, queue, sound]);
   useEffect(
     () => () => {
@@ -67,9 +61,9 @@ export function Board({ id }: { id: string }) {
       return;
     }
     try {
-      audio.current ??= new AudioContext();
-      await audio.current.resume();
+      audio.current = await enableSound(audio.current);
       setSound(true);
+      if (queue) playChime(audio.current, queue.chimeStyle);
     } catch {
       setMessage("Sound is unavailable in this browser.");
     }
@@ -102,15 +96,33 @@ export function Board({ id }: { id: string }) {
 
   const current = queue.current;
   const called = current?.state === "called";
+  const t = (bn: string, en: string) => (queue.language === "bn" ? bn : en);
   return (
-    <main ref={screen} id="main" className="board" data-theme={queue.theme}>
+    <main
+      ref={screen}
+      id="main"
+      className="board"
+      data-theme={queue.theme}
+      lang={queue.language}
+    >
       <header className="boardHead">
         <span>{business(queue.name)}</span>
         <div className="tools">
+          {queue.selfService && (
+            <a
+              className="plain boardJoin"
+              href={"/kiosk/" + id}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <QrCode size={20} aria-hidden="true" />{" "}
+              {t("টোকেন নিন", "Take a ticket")}
+            </a>
+          )}
           {queue.chime && (
             <button
               className="icon"
-              aria-label="Call sound"
+              aria-label={t("ডাকার শব্দ", "Call sound")}
               aria-pressed={sound}
               onClick={toggleSound}
             >
@@ -119,7 +131,11 @@ export function Board({ id }: { id: string }) {
           )}
           <button
             className="icon"
-            aria-label={full ? "Exit fullscreen" : "Enter fullscreen"}
+            aria-label={
+              full
+                ? t("পূর্ণ পর্দা বন্ধ করুন", "Exit fullscreen")
+                : t("পূর্ণ পর্দায় দেখুন", "Enter fullscreen")
+            }
             onClick={fullscreen}
           >
             {full ? (
@@ -141,14 +157,14 @@ export function Board({ id }: { id: string }) {
         <h1>
           <span className="dot" />
           {called
-            ? "Now calling"
+            ? t("এখন ডাকা হচ্ছে", "Now calling")
             : current
-              ? "In service"
+              ? t("সেবা চলছে", "In service")
               : queue.paused
-                ? "Ticket issuance paused"
+                ? t("টোকেন দেওয়া বন্ধ আছে", "Ticket issuance paused")
                 : queue.waiting
-                  ? "Please take a seat"
-                  : "You’re all caught up"}
+                  ? t("বসে অপেক্ষা করুন", "Please take a seat")
+                  : t("লাইনে কেউ নেই", "You’re all caught up")}
         </h1>
         {current && (
           <div className="boardNumber" key={announcement ?? current.number}>
@@ -166,7 +182,7 @@ export function Board({ id }: { id: string }) {
       </section>
       {queue.upcoming.length > 0 && (
         <section className="boardNext" aria-labelledby="upcoming">
-          <h2 id="upcoming">Up next</h2>
+          <h2 id="upcoming">{t("এরপর", "Up next")}</h2>
           {
             <ol>
               {queue.upcoming.map((value) => (

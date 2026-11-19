@@ -1,45 +1,36 @@
-﻿# QueueWindow
+# QueueWindow
 
-A small, working queue application with a staff desk, private visitor tickets, and a large-screen public display. Visitors need no account. Demo sessions have isolated, persistent queues and expire after 24 hours.
+A single-counter queue for service desks. Staff manage one FIFO line. Visitors can take a ticket from a QR sign or a shared kiosk and follow their turn on a private page. The waiting room has a separate public display.
 
 ## Run locally
 
 Use Node.js 22 or newer.
 
-```sh
-npm ci
-npm run dev
-```
+1. Run `npm ci`.
+2. Copy `.env.example` to `.env.local`. Generate an `APP_SECRET`, then run `npm run password` to hash a staff password of at least 12 characters. End input with Ctrl+Z then Enter on Windows, or Ctrl+D on macOS/Linux. Store the printed hash in `STAFF_PASSWORD_HASH`.
+3. Run `npm run dev` and open http://127.0.0.1:3000/login. The local queue is persisted in `data/queuewindow.db`.
 
-Open http://127.0.0.1:3000 and choose **Try the demo**. Local SQLite storage is created in `data/queuewindow.db`; it survives restarts. No cloud credentials are needed for the demo.
+## Set up a venue
 
-The interface is English-first. The homepage has an interactive queue preview; **Call next** demonstrates how a visitor is notified. In the actual demo workspace, open a ticket and the public display in separate tabs to see persistent queue updates.
+1. In **Settings**, enter the venue and counter names. Under **Visitor access**, allow self-service, then save. Open **Visitor access** in the staff header to print the QR sign or open the shared kiosk.
+2. Use a publicly reachable HTTPS origin before printing a sign for visitors. A localhost link is only usable on the host computer. Test the posted QR on venue Wi-Fi and mobile data. Visitors can switch between Bangla and English.
+3. Open **Public display** on a TV or monitor. Choose the display language, theme, upcoming count and chime in Settings. Chimes are off by default. If enabled, press **Call sound** on the TV once after loading it. The settings preview lets staff audition each sound.
+4. At the kiosk, choose **Get a ticket** and **Print ticket**. Select the installed printer in the browser dialog. Configure the paper width and test the receipt and QR on the actual printer. For unattended printing, a managed kiosk browser and preconfigured printer are needed. Visitors can also scan the receipt QR without printing. **Done** clears the shared screen, and the screen clears automatically after 90 seconds.
+5. Staff can keep timing off, show elapsed time, or add a service target. The target bar is staff-only. Pausing blocks new staff and self-service tickets while leaving existing tickets available to serve.
 
-For owner sign-in, copy `.env.example` to `.env.local`, generate `APP_SECRET`, and set `STAFF_PASSWORD_HASH`. Run `npm run password`, type a password of at least 12 characters on stdin, then end input (Ctrl+Z then Enter on Windows). Store the printed hash, not the password. Restart the server after changing environment variables.
-
-## Run the counter
-
-Open the staff demo, issue a ticket, and open its private link and **Public display** in separate tabs. When the counter is idle, **Call A002** (or the next ticket number shown) calls the next visitor. **Call again** re-announces the same ticket. **Start service** starts the elapsed service timer, and **Finish service** frees the counter.
-
-Under **Settings**, open **Display settings** to preview Midnight or Paper and choose how many upcoming tickets to show. For audio, save **Allow call chime**, then press **Call sound** on the display itself. Under **Ticket and queue messages**, set a print footer or a pause message. Pausing stops new ticket issuance while existing tickets can still be served.
-
-Use a local file database for development. A local production run also requires `APP_SECRET`. See [deployment](docs/DEPLOYMENT.md) for production configuration.
+If a connection drops during issuance, retry from the same tab. Its request key lets the server return the original ticket. The kiosk also needs a working connection to issue tickets. During an outage, direct visitors to staff and use the venue's paper fallback until the queue is reachable again.
 
 ## Checks
 
 ```sh
 npm test
-npm run typecheck
 npm run lint
 npm run build
+npm run typecheck
 npx playwright install chromium
 npm run test:e2e
 ```
 
-Browser tests default to localhost port 3000. Set `QW_TEST_PORT` to use another port. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` only if using an existing Chromium installation. Do not run a build while changing source or running browser tests against the development server.
+Browser tests use an isolated database and an explicit test-only workspace fixture. Set `QW_TEST_PORT` to use a different port and `PLAYWRIGHT_CHROMIUM_EXECUTABLE` for an existing Chromium installation. Production staff sign-in requires credentials.
 
-## How it works
-
-Next.js serves the UI and authenticated HTTP endpoints. libSQL transactions allocate ticket numbers, validate transitions, record commands, and enforce one active ticket per queue. Visitors use an unguessable private capability in the URL fragment. Clients poll every five seconds while visible and refetch after staff actions. No websocket service is required.
-
-See [architecture](docs/ARCHITECTURE.md), [deployment](docs/DEPLOYMENT.md), and [product scope](docs/PRODUCT_BRIEF.md). This is a portfolio application, not a medical records system. No patient information should be entered.
+See [architecture](docs/ARCHITECTURE.md), [deployment](docs/DEPLOYMENT.md), and [product scope](docs/PRODUCT_BRIEF.md). The app does not collect visitor names, phone numbers, or medical information.

@@ -7,12 +7,15 @@ import {
   ArrowRight,
   ChevronRight,
   Monitor,
+  QrCode,
   Plus,
   Settings2,
 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { request, usePoll, HttpError } from "@/lib/client";
 import {
+  displayThemes,
+  chimeStyles,
   isActive,
   isTerminal,
   ticketLabel,
@@ -33,6 +36,11 @@ import {
   titleFor,
 } from "./ui";
 
+import { enableSound, playChime } from "./chime";
+
+const Access = dynamic(() =>
+  import("./access").then((module) => module.Access),
+);
 const ShareTicket = dynamic(() =>
   import("./share").then((module) => module.ShareTicket),
 );
@@ -54,7 +62,7 @@ type Confirm = {
   ticketId?: string;
 };
 
-function Elapsed({ since }: { since: number }) {
+function Elapsed({ since, target = 0 }: { since: number; target?: number }) {
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -62,9 +70,18 @@ function Elapsed({ since }: { since: number }) {
   }, []);
   const seconds = Math.max(0, Math.floor((now - since) / 1000));
   return (
-    <time>
-      {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
-    </time>
+    <span className="elapsed">
+      <time>
+        {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
+      </time>
+      {target > 0 && (
+        <progress
+          aria-label="Service target"
+          max={target * 60}
+          value={Math.min(seconds, target * 60)}
+        />
+      )}
+    </span>
   );
 }
 
@@ -84,6 +101,28 @@ export function Staff() {
     null,
   );
   const [settings, setSettings] = useState(false);
+  const [access, setAccess] = useState(false);
+  const [soundError, setSoundError] = useState("");
+  const audio = useRef<AudioContext | null>(null);
+  useEffect(
+    () => () => {
+      void audio.current?.close().catch(() => {});
+    },
+    [],
+  );
+  async function previewSound(button: HTMLButtonElement) {
+    const style = button.form?.elements.namedItem("chimeStyle");
+    if (!(style instanceof HTMLSelectElement)) return;
+    const selected = style.value;
+    const preset = chimeStyles.find((value) => value === selected) ?? "bell";
+    try {
+      audio.current = await enableSound(audio.current);
+      playChime(audio.current, preset);
+      setSoundError("");
+    } catch {
+      setSoundError("Sound is unavailable on this device.");
+    }
+  }
   const [previewTheme, setPreviewTheme] =
     useState<Preferences["theme"]>("midnight");
   const [previewCount, setPreviewCount] = useState(4);
@@ -172,7 +211,14 @@ export function Staff() {
       desk: String(form.get("desk")),
       message: String(form.get("message")),
       preferences: {
-        theme: form.get("theme") === "paper" ? "paper" : "midnight",
+        theme: previewTheme,
+        displayLanguage: form.get("displayLanguage") === "bn" ? "bn" : "en",
+        chimeStyle:
+          chimeStyles.find((style) => style === form.get("chimeStyle")) ??
+          "bell",
+        showTiming: form.has("showTiming"),
+        serviceTarget: parseInt(String(form.get("serviceTarget") || "0"), 10),
+        selfService: form.has("selfService"),
         upcoming: parseInt(String(form.get("upcoming")), 10),
         chime: form.has("chime"),
         printFooter: String(form.get("printFooter")),
@@ -248,6 +294,16 @@ export function Staff() {
           <Monitor size={19} aria-hidden="true" />
           <span>Public display</span>
         </a>
+        {queue.preferences.selfService && (
+          <button
+            className="plain accessButton"
+            aria-label="Visitor access"
+            onClick={() => setAccess(true)}
+          >
+            <QrCode size={20} aria-hidden="true" />
+            <span>Visitor access</span>
+          </button>
+        )}
         <button
           className="icon"
           aria-label="Settings"
@@ -264,10 +320,7 @@ export function Staff() {
       <main id="main" className="wrap staff">
         <div className="staffTop">
           <div>
-            <p>
-              {business(queue.name)}{" "}
-              {queue.demo && <span className="badge">Demo</span>}
-            </p>
+            <p>{business(queue.name)} </p>
             <h1 id="staff-title" tabIndex={-1}>
               Your queue
             </h1>
@@ -300,16 +353,24 @@ export function Staff() {
                 {current ? titleFor[current.state] : "Ready when you are"}
               </h2>
               <span>{desk(queue.desk)}</span>
-              {current?.state === "serving" && queue.startedAt && (
-                <span>
-                  Service time <Elapsed since={queue.startedAt} />
-                </span>
-              )}
-              {current?.state === "called" && queue.calledAt && (
-                <span>
-                  Called <Elapsed since={queue.calledAt} /> ago
-                </span>
-              )}
+              {queue.preferences.showTiming &&
+                current?.state === "serving" &&
+                queue.startedAt && (
+                  <span>
+                    Service time{" "}
+                    <Elapsed
+                      since={queue.startedAt}
+                      target={queue.preferences.serviceTarget}
+                    />
+                  </span>
+                )}
+              {queue.preferences.showTiming &&
+                current?.state === "called" &&
+                queue.calledAt && (
+                  <span>
+                    Called <Elapsed since={queue.calledAt} /> ago
+                  </span>
+                )}
             </header>
             <div className="activeNumber" aria-live="polite">
               <Number value={current?.number ?? waiting[0]?.number} />
@@ -388,10 +449,15 @@ export function Staff() {
                           titleFor[item.state]
                         ) : index === 0 ? (
                           <>
-                            Up next &middot; <Elapsed since={item.issuedAt} />
+                            Up next{" "}
+                            {queue.preferences.showTiming && (
+                              <Elapsed since={item.issuedAt} />
+                            )}
                           </>
                         ) : (
-                          <Elapsed since={item.issuedAt} />
+                          queue.preferences.showTiming && (
+                            <Elapsed since={item.issuedAt} />
+                          )
                         )}
                       </span>
                       <ChevronRight size={19} aria-hidden="true" />
@@ -432,39 +498,73 @@ export function Staff() {
           }
         />
       )}
+      {access && (
+        <Access
+          id={queue.displayId}
+          name={queue.name}
+          onClose={() => setAccess(false)}
+        />
+      )}
       {settings && (
         <Modal title="Settings" onClose={() => setSettings(false)}>
-          <form className="form" onSubmit={save}>
-            <label>
-              Business name
-              <input
-                name="name"
-                defaultValue={queue.name}
-                minLength={2}
-                maxLength={60}
-                required
-              />
-            </label>
-            <label>
-              Desk name
-              <input
-                name="desk"
-                defaultValue={queue.desk}
-                maxLength={30}
-                required
-              />
-            </label>
-            <label>
-              Visitor message
-              <textarea
-                name="message"
-                rows={2}
-                defaultValue={queue.message}
-                maxLength={140}
-              />
-            </label>
+          <form className="form settingsForm" onSubmit={save}>
+            <details className="settingsMore">
+              <summary>Visitor access</summary>
+              <label className="checkbox">
+                <input
+                  type="checkbox"
+                  name="selfService"
+                  defaultChecked={queue.preferences.selfService}
+                />{" "}
+                Allow visitors to join from QR and kiosk
+              </label>
+              <p className="settingHelp">
+                Save changes to open Visitor access and print a QR sign.
+              </p>
+            </details>
+            <details className="settingsMore" open>
+              <summary>Business details</summary>
+              <label>
+                Business name
+                <input
+                  name="name"
+                  defaultValue={queue.name}
+                  minLength={2}
+                  maxLength={60}
+                  required
+                />
+              </label>
+              <label>
+                Desk name
+                <input
+                  name="desk"
+                  defaultValue={queue.desk}
+                  maxLength={30}
+                  required
+                />
+              </label>
+              <label>
+                Visitor message
+                <textarea
+                  name="message"
+                  rows={2}
+                  defaultValue={queue.message}
+                  maxLength={140}
+                />
+              </label>
+            </details>
             <details className="settingsMore">
               <summary>Display settings</summary>
+              <label>
+                Display language
+                <select
+                  name="displayLanguage"
+                  defaultValue={queue.preferences.displayLanguage}
+                >
+                  <option value="en">English</option>
+                  <option value="bn">বাংলা</option>
+                </select>
+              </label>
               <div className="displaySample" data-theme={previewTheme}>
                 <span>Now calling</span>
                 <strong>A024 &rarr; {queue.desk}</strong>
@@ -482,14 +582,18 @@ export function Staff() {
                 <select
                   name="theme"
                   value={previewTheme}
-                  onChange={(event) =>
-                    setPreviewTheme(
-                      event.target.value === "paper" ? "paper" : "midnight",
-                    )
-                  }
+                  onChange={(event) => {
+                    const theme = displayThemes.find(
+                      (theme) => theme === event.target.value,
+                    );
+                    if (theme) setPreviewTheme(theme);
+                  }}
                 >
-                  <option value="midnight">Midnight</option>
-                  <option value="paper">Paper</option>
+                  {displayThemes.map((theme) => (
+                    <option key={theme} value={theme}>
+                      {theme[0].toUpperCase() + theme.slice(1)}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label>
@@ -514,6 +618,51 @@ export function Staff() {
                 />{" "}
                 Allow call chime
               </label>
+              <label>
+                Chime style
+                <select
+                  name="chimeStyle"
+                  defaultValue={queue.preferences.chimeStyle}
+                >
+                  <option value="bell">Clear bell</option>
+                  <option value="marimba">Warm marimba</option>
+                  <option value="soft">Soft tones</option>
+                </select>
+              </label>
+              <button
+                className="plain"
+                type="button"
+                onClick={(event) => void previewSound(event.currentTarget)}
+              >
+                Preview sound
+              </button>
+              {soundError && <p role="status">{soundError}</p>}
+            </details>
+            <details className="settingsMore">
+              <summary>Timing</summary>
+              <label className="checkbox">
+                <input
+                  type="checkbox"
+                  name="showTiming"
+                  defaultChecked={queue.preferences.showTiming}
+                />{" "}
+                Show wait and service timers
+              </label>
+              <label>
+                Service target in minutes
+                <input
+                  type="number"
+                  name="serviceTarget"
+                  min={0}
+                  max={120}
+                  step={1}
+                  defaultValue={queue.preferences.serviceTarget}
+                />
+              </label>
+              <p className="settingHelp">
+                Use 0 for elapsed time only. A target adds a progress bar for
+                staff.
+              </p>
             </details>
             <details className="settingsMore">
               <summary>Ticket and queue messages</summary>
@@ -558,7 +707,7 @@ export function Staff() {
                     action: "new-day",
                     title: "Start a new day?",
                     description:
-                      "Finish active tickets first. Previous tickets will be archived.",
+                      "Finish active tickets first. Previous tickets and their links will be cleared.",
                   });
                 }}
               >

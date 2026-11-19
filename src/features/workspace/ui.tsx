@@ -30,7 +30,7 @@ export function errorText(error: unknown, login = false) {
     if (error.status === 429) return "Please wait a moment and try again.";
     if (error.status === 400) return "Check your details and try again.";
     if (login && error.status === 503)
-      return "Staff login is not configured. Try the demo.";
+      return "Staff sign-in is not configured. Contact your queue administrator.";
   }
   return "Unable to connect. Please try again.";
 }

@@ -195,8 +195,7 @@ textarea {
   background: var(--canvas);
 }
 .button:active,
-.icon:active,
-.previewTrigger:active {
+.icon:active {
   transform: scale(0.97);
 }
 @media (hover: hover) {
@@ -274,177 +273,6 @@ textarea {
 }
 .state .actions {
   margin-top: 28px;
-}
-.entry {
-  max-width: 1440px;
-  margin: auto;
-  padding: 40px 5% 24px;
-}
-.entryCopy {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 24px;
-}
-.entryCopy h1 {
-  font-size: clamp(45px, 5vw, 72px);
-  line-height: 1.09;
-  grid-row: span 2;
-  font-weight: 600;
-}
-.entryCopy p {
-  font-size: 17px;
-  align-self: end;
-  color: var(--muted);
-}
-.entryCopy > .button {
-  justify-self: start;
-  align-self: start;
-}
-.entryCopy > .feedback {
-  grid-column: 2;
-}
-.preview {
-  margin-top: 48px;
-  overflow: hidden;
-  border-radius: 16px;
-  background: var(--deep);
-  color: white;
-}
-.previewToolbar {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  padding: 22px 32px;
-  color: #d5e0ff;
-  font-size: 13px;
-}
-.previewToolbar > span:first-child {
-  display: flex;
-  align-items: center;
-}
-.previewStage {
-  display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: 60px;
-  align-items: center;
-  padding: 12px 10% 36px;
-  min-height: 330px;
-}
-.previewCall {
-  display: flex;
-  align-items: flex-start;
-  flex-direction: column;
-  gap: 12px;
-}
-.previewCall > span:first-child {
-  font-size: 18px;
-  color: #d3dfff;
-}
-.previewCall .number {
-  font-size: clamp(90px, 10vw, 144px);
-  font-weight: 500;
-}
-.previewCaption {
-  color: #d3dfff;
-  font-size: 14px;
-}
-.previewPhone {
-  width: 220px;
-  min-height: 278px;
-  justify-self: center;
-  background: #fff;
-  color: var(--ink);
-  border-radius: 26px;
-  box-shadow: 0 22px 50px #06184d55;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  padding: 17px 20px 25px;
-  gap: 14px;
-  transition: background 0.3s;
-}
-.phoneSpeaker {
-  width: 45px;
-  height: 5px;
-  background: #dce2ee;
-  border-radius: 5px;
-  margin-bottom: 14px;
-}
-.previewPhone > span {
-  font-size: 12px;
-  color: var(--muted);
-}
-.previewPhone .number {
-  font-size: 45px;
-  color: var(--ink);
-}
-.phoneStatus {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 10px;
-  font-size: 14px;
-  animation: announce 0.4s var(--ease);
-}
-.position {
-  width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  background: #e6edff;
-  border-radius: 50%;
-  color: var(--blue);
-}
-.previewPhone[data-called="true"] {
-  background: #e1f6f0;
-}
-.previewPhone[data-called="true"] .phoneStatus {
-  color: #08654e;
-}
-.previewFooter {
-  background: #0b287f;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  padding: 18px 32px;
-}
-.previewLine {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  font-size: 14px;
-  color: #d0dcff;
-}
-.previewLine b {
-  color: white;
-  font-weight: 650;
-}
-.previewTrigger {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 17px;
-  border: 0;
-  border-radius: 8px;
-  background: white;
-  color: #173785;
-  font-weight: 700;
-  font-size: 13px;
-  transition: transform 0.18s;
-}
-.entryFooter {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 28px 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-.entryFooter > div {
-  display: flex;
-  gap: 28px;
 }
 .signIn {
   max-width: 420px;
@@ -567,11 +395,9 @@ summary {
 }
 @keyframes dialogEnter {
   from {
-    opacity: 0;
     transform: translateY(12px) scale(0.98);
   }
   to {
-    opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
@@ -584,76 +410,6 @@ summary {
   }
   .brand {
     font-size: 18px;
-  }
-  .entry {
-    padding: 30px 22px;
-  }
-  .entryCopy {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 22px;
-  }
-  .entryCopy h1 {
-    font-size: clamp(42px, 8vw, 60px);
-  }
-  .entryCopy p {
-    font-size: 15px;
-    align-self: auto;
-  }
-  .entryCopy > .button {
-    align-self: auto;
-  }
-  .preview {
-    margin-top: 32px;
-  }
-  .previewToolbar {
-    padding: 18px;
-    font-size: 12px;
-  }
-  .previewStage {
-    grid-template-columns: 1fr;
-    padding: 20px 20px 30px;
-    gap: 25px;
-  }
-  .previewCall {
-    align-items: center;
-    gap: 5px;
-  }
-  .previewCall .number {
-    font-size: 82px;
-  }
-  .previewCaption {
-    display: none;
-  }
-  .previewPhone {
-    min-height: 220px;
-    width: 190px;
-    padding: 12px 18px 20px;
-    gap: 9px;
-  }
-  .phoneSpeaker {
-    margin-bottom: 8px;
-  }
-  .previewFooter {
-    padding: 15px;
-    flex-direction: column;
-  }
-  .previewLine {
-    gap: 20px;
-    font-size: 12px;
-  }
-  .previewTrigger {
-    justify-content: center;
-    min-height: 44px;
-  }
-  .entryFooter {
-    flex-direction: column;
-    gap: 12px;
-  }
-  .entryFooter > div {
-    gap: 18px;
-    font-size: 11px;
   }
   .tools {
     gap: 4px;

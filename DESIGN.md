@@ -40,7 +40,7 @@ components:
 
 ## Overview
 
-English-first service interface. White operational screens and a blue public display share clear ticket typography. This implementation is ready for visual review; it is not recorded as user-approved.
+English staff interface with Bangla-first public admission and bilingual visitor pages. White operational screens and a blue public display share clear ticket typography. This implementation is ready for visual review; it is not recorded as user-approved.
 
 ## Colors
 
@@ -48,7 +48,7 @@ Blue identifies actions and ticket numbers. The public display uses a dark blue 
 
 ## Typography
 
-Manrope Variable is bundled locally. Ticket IDs remain consistent across staff, visitor, print, and display. Labels use sentence case. Bangla localization is deferred by request.
+Manrope Variable is bundled locally. Ticket IDs remain consistent across staff, visitor, print, and display. Labels use sentence case. Noto Sans Bengali is bundled locally for Bengali glyphs.
 
 ## Layout
 
@@ -56,7 +56,7 @@ Staff see the waiting list on the left and the active ticket on the right. On ph
 
 ## Elevation & Depth
 
-Operational screens are flat. Dialogs use a soft shadow and dimmed backdrop. The homepage device preview has a shadow to distinguish its visitor surface from the display behind it.
+Operational screens are flat. Dialogs use a soft shadow and dimmed backdrop. The homepage uses a printed-sign composition to introduce the visitor journey.
 
 ## Shapes
 
@@ -64,7 +64,7 @@ Aligned, upright geometry. No rotated cards or slanted artwork. The three-part m
 
 ## Components
 
-The homepage preview responds to Call next. Number changes reveal vertically; dialogs enter with a short spatial transition. Reduced-motion preference disables movement. Secondary actions live in settings or ticket dialogs. Retry controls preserve uncertain commands instead of issuing duplicate work.
+Kiosk receipts reveal once when a ticket is issued. Number changes reveal vertically; dialogs enter with a short spatial transition. Reduced-motion preference disables movement. Secondary actions live in settings or ticket dialogs. Retry controls preserve uncertain commands instead of issuing duplicate work.
 
 ## Do's and Don'ts
 

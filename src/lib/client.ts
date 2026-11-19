@@ -11,19 +11,46 @@ export class HttpError extends Error {
 export async function request<T>(
   url: string,
   options?: RequestInit,
+  timeout = 10000,
 ): Promise<T> {
-  const response = await fetch(url, {
-    ...options,
-    cache: "no-store",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-  });
-  const body = await response.json();
-  if (!response.ok)
-    throw new HttpError(
-      body.error || "Something went wrong. Please try again.",
-      response.status,
-    );
-  return body as T;
+  const controller = options?.signal ? null : new AbortController();
+  const timer = controller
+    ? setTimeout(() => controller.abort(), timeout)
+    : undefined;
+  try {
+    const response = await fetch(url, {
+      ...options,
+      cache: "no-store",
+      signal: options?.signal ?? controller?.signal,
+      headers: { "Content-Type": "application/json", ...options?.headers },
+    });
+    const body = await response.json();
+    if (!response.ok)
+      throw new HttpError(
+        body.error || "Something went wrong. Please try again.",
+        response.status,
+      );
+    return body as T;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export function requestKey() {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 15) | 64;
+  bytes[8] = (bytes[8] & 63) | 128;
+  const hex = Array.from(bytes, (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join("-");
 }
 export function usePoll<T extends { version: number }>(
   url: string | null,
@@ -41,7 +68,6 @@ export function usePoll<T extends { version: number }>(
     try {
       const next = await request<T>(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        signal: AbortSignal.timeout(10000),
       });
       if (alive.current) {
         setData((previous) =>

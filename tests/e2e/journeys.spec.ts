@@ -10,8 +10,12 @@ const press = (page: Page, name: string) =>
   page.getByRole("button", { name, exact: true });
 
 async function demo(page: Page) {
-  await page.goto("/");
-  await press(page, "Try the demo").click();
+  const fixture = await page.request.post(origin + "/api/session", {
+    headers: { origin },
+    data: { mode: "demo" },
+  });
+  expect(fixture.ok()).toBeTruthy();
+  await page.goto("/desk");
   await expect(press(page, "New ticket")).toBeVisible();
 }
 async function mutate(api: APIRequestContext, action: string, fields = {}) {
@@ -61,7 +65,7 @@ test("staff issue, visitor progress, public display, completion, and persistence
     .toBe(false);
   await expect(display.locator(".boardNumber")).toHaveText("A001");
   await press(page, "Start service").click();
-  await expect(page.getByText("Service time")).toBeVisible();
+  await expect(page.getByText("Service time")).toHaveCount(0);
   await press(page, "Finish service").click();
   await expect(
     visitor.getByRole("heading", { name: "4 people ahead" }),
@@ -188,6 +192,80 @@ test("server authorization, cross-origin rejection, and private workspace isolat
   ).toBe(404);
   await other.close();
 });
+test("phone QR link and shared kiosk issue real tickets in one queue", async ({
+  page,
+  browser,
+}) => {
+  await demo(page);
+  await press(page, "Settings").click();
+  const settings = page.getByRole("dialog", { name: "Settings" });
+  await settings.getByText("Visitor access", { exact: true }).click();
+  await settings.getByRole("checkbox", { name: /Allow visitors/ }).check();
+  await settings.getByText("Timing", { exact: true }).click();
+  await settings.getByRole("checkbox", { name: /Show wait/ }).check();
+  await settings.getByLabel("Service target in minutes").fill("5");
+  await press(page, "Save changes").click();
+  await press(page, "Visitor access").click();
+  const poster = page.getByRole("dialog", { name: "Visitor access" });
+  await expect(
+    poster.getByAltText("QR code for joining the queue"),
+  ).toBeVisible();
+  const joinPath = await poster.locator(".accessUrl").getAttribute("href");
+  const kioskPath = await poster
+    .getByRole("link", { name: "Open kiosk" })
+    .getAttribute("href");
+  const mobileContext = await browser.newContext({
+    viewport: { width: 375, height: 740 },
+  });
+  const mobile = await mobileContext.newPage();
+  await mobile.addInitScript(() => {
+    Object.defineProperty(window.crypto, "randomUUID", { value: undefined });
+    Object.defineProperty(AbortSignal, "timeout", { value: undefined });
+  });
+  await mobile.goto(origin + joinPath);
+  const joinAudit = await new AxeBuilder({ page: mobile })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+    .analyze();
+  expect(joinAudit.violations.map((item) => item.id)).toEqual([]);
+  let droppedResponse = false;
+  await mobile.route("**/api/join/**", async (route) => {
+    if (route.request().method() === "POST" && !droppedResponse) {
+      droppedResponse = true;
+      const issued = await route.fetch();
+      expect(issued.ok()).toBeTruthy();
+      await route.abort();
+      return;
+    }
+    await route.continue();
+  });
+  await press(mobile, "টোকেন নিন").click();
+  await press(mobile, "আবার চেষ্টা করুন").click();
+  await expect(mobile.locator(".passNumber")).toContainText("A006");
+  await expect(mobile.locator("main")).toHaveAttribute("lang", "bn");
+  const kiosk = await browser.newPage({
+    viewport: { width: 768, height: 900 },
+  });
+  await kiosk.goto(origin + kioskPath);
+  await press(kiosk, "English").click();
+  await press(kiosk, "Get a ticket").click();
+  await expect(kiosk.locator(".receiptNumber")).toHaveText("A007");
+  await expect(kiosk.getByAltText("QR code for your ticket")).toBeVisible();
+  await kiosk.emulateMedia({ media: "print" });
+  await expect(kiosk.locator(".receiptNumber")).toBeVisible();
+  await expect(press(kiosk, "Print ticket")).toBeHidden();
+  await kiosk.emulateMedia({ media: "screen" });
+  await press(kiosk, "Done").click();
+  await expect(kiosk.locator(".receiptNumber")).toHaveCount(0);
+  await press(page, "Close").click();
+  await expect(press(page, "A007 View ticket")).toBeVisible({ timeout: 12000 });
+  await press(page, "Start service").click();
+  await expect(
+    page.getByRole("progressbar", { name: "Service target" }),
+  ).toBeVisible();
+  await mobileContext.close();
+  await kiosk.close();
+});
+
 test("sampled accessibility, mobile reflow, reduced motion, and printable ticket", async ({
   page,
   browser,

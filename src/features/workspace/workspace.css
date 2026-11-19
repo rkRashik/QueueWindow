@@ -644,3 +644,303 @@
 .displaySample strong {
   font-size: 20px;
 }
+
+.arrivalHome {
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 67vh;
+  padding: clamp(30px, 7vw, 96px) 5%;
+  display: grid;
+  grid-template-columns: 1fr minmax(260px, 0.67fr);
+  align-items: center;
+  gap: clamp(28px, 7vw, 100px);
+}
+.arrivalHome h1 {
+  font-size: clamp(2.5rem, 5.5vw, 5rem);
+}
+.arrivalHome section > p {
+  margin: 22px 0;
+  color: var(--muted);
+}
+.arrivalSign {
+  background: #dcece7;
+  color: #143e36;
+  border-radius: 22px;
+  padding: clamp(28px, 5vw, 54px);
+  display: grid;
+  gap: 18px;
+}
+.arrivalSign strong {
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+.admission {
+  min-height: 100svh;
+  padding: clamp(18px, 4vw, 48px);
+  background: #ecf3ef;
+  color: #16332d;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-items: center;
+  gap: 24px;
+}
+.admissionHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  width: min(100%, 1100px);
+  margin-inline: auto;
+}
+.admissionPanel,
+.admissionReceipt {
+  width: min(100%, 540px);
+  margin-inline: auto;
+  padding: clamp(24px, 6vw, 56px);
+  background: #fff;
+  border-radius: 20px;
+  display: grid;
+  gap: 16px;
+  text-align: center;
+}
+.admissionSymbol {
+  margin-inline: auto;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  color: #134d3c;
+  background: #dcece7;
+  border-radius: 14px;
+}
+.admissionVenue {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.admissionPanel h1 {
+  font-size: clamp(2.1rem, 6vw, 4rem);
+  line-height: 1.25;
+}
+.admissionPanel > p {
+  color: #395c51;
+}
+.admissionPanel [role="alert"] {
+  background: #fff3e8;
+  color: #793914;
+  padding: 12px;
+  border-radius: 8px;
+}
+.admission .button {
+  background: #175c48;
+  min-height: 54px;
+}
+.admission .button:hover {
+  background: #104535;
+}
+.admission[data-kiosk="true"] .button {
+  min-height: 62px;
+  font-size: 1.1rem;
+}
+.receiptBody {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  animation: receipt-in 320ms var(--ease) both;
+}
+.receiptBody img {
+  display: block;
+}
+.receiptNumber {
+  font-size: clamp(3rem, 12vw, 5.5rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+.admissionActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+@keyframes receipt-in {
+  from {
+    clip-path: inset(0 0 96%);
+    transform: translateY(-7px);
+  }
+  to {
+    clip-path: inset(0);
+    transform: translateY(0);
+  }
+}
+.ticketStateCopy {
+  animation: announce 240ms var(--ease) both;
+}
+
+.settingsForm {
+  gap: 8px;
+}
+.settingsMore {
+  border: 1px solid #dfe7f0;
+  border-radius: 12px;
+  padding: 0 14px;
+  margin-top: 8px;
+}
+.settingsMore[open] {
+  padding-bottom: 14px;
+}
+.settingsMore summary {
+  min-height: 46px;
+  padding: 11px 0;
+  font-weight: 720;
+  color: #213553;
+}
+.settingsMore label + label {
+  margin-top: 12px;
+}
+.settingHelp {
+  font-size: 0.83rem;
+  color: #486078;
+  margin: 8px 0;
+}
+.settingsForm > .button {
+  margin-top: 12px;
+}
+.elapsed {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.elapsed progress {
+  width: 110px;
+  height: 7px;
+  accent-color: #2356df;
+}
+.elapsed progress::-webkit-progress-value {
+  transition: width 420ms var(--ease);
+}
+.accessPoster {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+.accessPoster img {
+  width: 180px;
+  height: auto;
+}
+.accessUrl {
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+.boardJoin {
+  color: inherit;
+}
+.boardJoin:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+:is(.board, .displaySample)[data-theme="river"] {
+  background: #10362f;
+  color: #e8fff5;
+}
+.board[data-theme="river"] .boardCall {
+  background: #155243;
+}
+:is(.board, .displaySample)[data-theme="clay"] {
+  background: #ffefe4;
+  color: #52271b;
+}
+.board[data-theme="clay"] .boardCall {
+  background: #f8d9c8;
+}
+:is(.board, .displaySample)[data-theme="plum"] {
+  background: #281a3c;
+  color: #fff1fa;
+}
+.board[data-theme="plum"] .boardCall {
+  background: #472b5e;
+}
+.board[data-theme="river"] :is(.boardCall h1, .boardNext h2) {
+  color: #c9f4e6;
+}
+.board[data-theme="clay"] :is(.boardCall h1, .boardNext h2) {
+  color: #653226;
+}
+.board[data-theme="plum"] :is(.boardCall h1, .boardNext h2) {
+  color: #f0d8ff;
+}
+@media (max-width: 700px) {
+  .arrivalHome {
+    grid-template-columns: 1fr;
+  }
+  .header .accessButton {
+    width: 44px;
+    padding-inline: 0;
+  }
+  .accessButton span {
+    display: none;
+  }
+  .boardHead {
+    align-items: flex-start;
+  }
+  .boardHead .tools {
+    justify-content: flex-end;
+    gap: 4px;
+  }
+}
+@media print {
+  body:has(.admissionReceipt) > * {
+    visibility: visible;
+  }
+  body:has(.admissionReceipt) .skip,
+  .admission:has(.admissionReceipt) .admissionHeader,
+  .admissionActions {
+    display: none;
+  }
+  .admission:has(.admissionReceipt) {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    background: white;
+  }
+  .admissionReceipt {
+    width: 100%;
+    max-width: 75mm;
+    background: white;
+    color: black;
+    padding: 3mm;
+  }
+  .receiptBody {
+    animation: none;
+  }
+  .receiptBody img {
+    width: 36mm;
+    height: 36mm;
+  }
+  .receiptNumber {
+    font-size: 32pt;
+  }
+}
+
+.modal:has(.settingsForm) {
+  width: min(100% - 24px, 610px);
+  padding-top: 0;
+}
+.modal:has(.settingsForm) .modalHead {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  background: #fff;
+  padding: 16px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e4eaf2;
+}
+.settingsForm .settingsMore {
+  margin-top: 0;
+}
+.settingsForm > .button {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  box-shadow: 0 8px 16px #17254a26;
+}
+.settingsForm :is(summary, input, select, textarea, button) {
+  scroll-margin-block: 82px;
+}

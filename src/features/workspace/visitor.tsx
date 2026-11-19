@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { ArrowUpRight, CircleCheck, RefreshCw } from "lucide-react";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { usePoll } from "@/lib/client";
 import type { VisitorView } from "@/lib/domain";
 import {
@@ -28,6 +28,22 @@ export function Visitor() {
 }
 
 function Ticket({ token }: { token: string | null }) {
+  const [bangla, setBangla] = useState(
+    () =>
+      token !== null &&
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("lang") === "bn",
+  );
+  const t = (bn: string, en: string) => (bangla ? bn : en);
+  const language = (
+    <button
+      className="plain languageControl"
+      lang={bangla ? "en" : "bn"}
+      onClick={() => setBangla(!bangla)}
+    >
+      {t("English", "বাংলা")}
+    </button>
+  );
   const {
     data: pass,
     error,
@@ -36,26 +52,32 @@ function Ticket({ token }: { token: string | null }) {
   if (!pass)
     return (
       <>
-        <Header />
+        <Header>{language}</Header>
         <State
           title={
             token === ""
-              ? "Have a ticket?"
+              ? t("টিকিট আছে?", "Have a ticket?")
               : error
-                ? "Ticket not found"
-                : "Finding your ticket…"
+                ? t("টিকিট পাওয়া যায়নি", "Ticket not found")
+                : t("টিকিট খোঁজা হচ্ছে…", "Finding your ticket…")
           }
           detail={
             token === ""
-              ? "Open your private link or scan the QR code from the desk."
+              ? t(
+                  "টিকিটের লিংক খুলুন বা কাউন্টারের দেওয়া QR কোড স্ক্যান করুন।",
+                  "Open your private link or scan the QR code from the desk.",
+                )
               : error
-                ? "Check your link or ask at the desk."
+                ? t(
+                    "লিংকটি আবার দেখুন বা কাউন্টারে কথা বলুন।",
+                    "Check your link or ask at the desk.",
+                  )
                 : undefined
           }
         >
           {error && (
             <button className="plain" onClick={refresh}>
-              Try again
+              {t("আবার চেষ্টা করুন", "Try again")}
             </button>
           )}
         </State>
@@ -66,37 +88,61 @@ function Ticket({ token }: { token: string | null }) {
   const waiting = stage === "waiting";
   const called = stage === "called";
   const done = stage === "completed";
-  const title = waiting
-    ? pass.ahead
-      ? count(pass.ahead) +
-        (pass.ahead === 1 ? " person ahead" : " people ahead")
-      : "You’re next"
-    : called
-      ? "It’s your turn"
-      : titleFor[stage];
-  const detail = called
-    ? desk(pass.desk) + " — please head over."
+  const banglaStates = {
+    waiting: "অপেক্ষায়",
+    called: "আপনার পালা এসেছে",
+    serving: "সেবা চলছে",
+    completed: "সেবা শেষ",
+    absent: "উপস্থিত ছিলেন না",
+    cancelled: "টিকিট বাতিল",
+  };
+  const title = bangla
+    ? waiting
+      ? pass.ahead
+        ? new Intl.NumberFormat("bn-BD").format(pass.ahead) + " জন আগে আছেন"
+        : "এরপর আপনার পালা"
+      : banglaStates[stage]
     : waiting
-      ? "Your turn will appear here."
-      : stage === "absent"
-        ? "Please check with the desk."
-        : undefined;
+      ? pass.ahead
+        ? count(pass.ahead) +
+          (pass.ahead === 1 ? " person ahead" : " people ahead")
+        : "You’re next"
+      : called
+        ? "It’s your turn"
+        : titleFor[stage];
+  const detail = bangla
+    ? called
+      ? "এই কাউন্টারে যান: " + pass.desk
+      : waiting
+        ? "আপনার পালা এলে এখানে দেখাবে।"
+        : stage === "absent"
+          ? "কাউন্টারে কথা বলুন।"
+          : undefined
+    : called
+      ? desk(pass.desk) + " — please head over."
+      : waiting
+        ? "Your turn will appear here."
+        : stage === "absent"
+          ? "Please check with the desk."
+          : undefined;
   const custom =
     pass.message === "Make yourself comfortable. We’ll be with you soon."
       ? ""
       : pass.message;
   return (
     <>
-      <Header />
-      <main id="main" className="visitor">
+      <Header>{language}</Header>
+      <main id="main" className="visitor" lang={bangla ? "bn" : "en"}>
         <div className="visitorTop">
           <p>{business(pass.name)}</p>
-          {pass.demo && <span className="badge">Demo</span>}
         </div>
         {error && <Offline refresh={refresh} />}
         <section className="pass" data-called={called || undefined}>
           {!["absent", "cancelled"].includes(stage) && (
-            <ol className="journey" aria-label="Ticket progress">
+            <ol
+              className="journey"
+              aria-label={t("টিকিটের অবস্থা", "Ticket progress")}
+            >
               {(["waiting", "called", "serving", "completed"] as const).map(
                 (step, index, steps) => (
                   <li
@@ -104,18 +150,22 @@ function Ticket({ token }: { token: string | null }) {
                     aria-current={stage === step ? "step" : undefined}
                     data-reached={steps.indexOf(stage as typeof step) >= index}
                   >
-                    {["Waiting", "Called", "In service", "Done"][index]}
+                    {
+                      (bangla
+                        ? ["অপেক্ষায়", "ডাকা হয়েছে", "সেবা চলছে", "শেষ"]
+                        : ["Waiting", "Called", "In service", "Done"])[index]
+                    }
                   </li>
                 ),
               )}
             </ol>
           )}
           <div className="passNumber">
-            <span>Your ticket</span>
+            <span>{t("আপনার টোকেন", "Your ticket")}</span>
             <Number value={pass.ticket.number} />
           </div>
           <div className="passStatus" aria-live="polite" aria-atomic="true">
-            <div>
+            <div key={stage} className="ticketStateCopy">
               <h1>{title}</h1>
               {detail && <p>{detail}</p>}
             </div>
@@ -126,9 +176,13 @@ function Ticket({ token }: { token: string | null }) {
             ) : null}
           </div>
         </section>
-        {waiting && (custom || pass.paused) && <p className="visitorNote">{custom || "New ticket issuance is paused."}</p>}
+        {waiting && (custom || pass.paused) && (
+          <p className="visitorNote">
+            {custom || "New ticket issuance is paused."}
+          </p>
+        )}
         <button className="plain visitorRefresh" onClick={refresh}>
-          <RefreshCw size={18} aria-hidden="true" /> Refresh
+          <RefreshCw size={18} aria-hidden="true" /> {t("আবার দেখুন", "Refresh")}
         </button>
       </main>
     </>

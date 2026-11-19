@@ -19,7 +19,7 @@ Save the URL and token as TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in `.env.local
 
 After approval, import the project using the Next.js preset. Use `npm ci` and `npm run build`. Set TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, APP_SECRET, STAFF_PASSWORD_HASH, and APP_URL (the exact HTTPS origin). Do not expose these as NEXT_PUBLIC variables. Set Node.js 22 or newer. Use separate databases for preview and production; never use local SQLite or JSON files on Vercel.
 
-Smoke-test owner login, demo creation, two simultaneous issuance requests, competing Call next actions, visitor expiry, public display, and persistence after redeployment. Confirm Secure cookies and cross-origin rejection over HTTPS. Monitor requests and database rows read/written; stop or restrict demo traffic at quota limits rather than enabling paid upgrades.
+Smoke-test owner login, QR admission, kiosk receipt printing, two simultaneous issuance requests, competing Call next actions, visitor expiry, public display, and persistence after redeployment. Confirm Secure cookies and cross-origin rejection over HTTPS. Monitor requests and database rows read/written; stop or restrict public admission traffic at quota limits rather than enabling paid upgrades.
 
 ## Known operational gaps
 

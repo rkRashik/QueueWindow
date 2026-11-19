@@ -13,6 +13,8 @@ export async function POST(request: Request) {
     await rateLimit(`login:${clientKey(request)}`, 12, 900000);
     const db = await database();
     if (body.mode === "demo") {
+      if (process.env.QW_ENABLE_TEST_FIXTURES !== "1" || process.env.VERCEL)
+        throw new AppError("Staff sign-in is required.", 400);
       await db.batch(
         [
           {
@@ -53,7 +55,7 @@ export async function POST(request: Request) {
     } else {
       if (!process.env.STAFF_PASSWORD_HASH)
         throw new AppError(
-          "Staff sign-in is not configured yet. You can explore the demo instead.",
+          "Staff sign-in is not configured. Contact the person who manages this queue.",
           503,
         );
       if (

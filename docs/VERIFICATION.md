@@ -18,3 +18,9 @@ The backend, database schema, authentication, and queue rules were preserved. No
 ## Staff and display redesign
 
 Production build, typecheck, lint, 11 unit and database tests, and four Chromium journeys passed. Browser journeys exercised repeat calls on the public display, the service timer, and saving display preferences. The capture run covered 390, 768, 1440 and 1920 pixel widths with isolated demo data. Physical TV audio and screen-reader behavior still need hands-on review.
+
+## Self-service admission and settings
+
+The production build, typecheck, lint, and 12 unit/database tests passed. All five Chromium journeys passed across the final suite and the targeted rerun of the phone and kiosk journey. The targeted run also simulated a lost successful response and retried without issuing a duplicate. The phone flow worked with newer browser UUID and timeout APIs removed. Screenshots cover authenticated staff settings, the venue QR sign, mobile admission, private ticket updates, kiosk receipts, and a Bangla TV display. Chromium exported a sample receipt PDF.
+
+Deployment, scans over mobile carrier networks, thermal printers, and physical TV speakers were not tested. Review those on the intended venue hardware and network. The browser displays a print dialog unless the venue configures managed printing. Public admission requires access to the queue server.

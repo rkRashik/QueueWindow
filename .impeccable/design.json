@@ -23,6 +23,10 @@
       {
         "name": "reducedMotion",
         "value": "Disable movement and transitions"
+      },
+      {
+        "name": "kiosk receipt reveal",
+        "value": "320ms"
       }
     ],
     "breakpoints": [
@@ -41,13 +45,10 @@
     ]
   },
   "narrative": {
-    "overview": "English-first service interface with open operational screens and a blue public display. User visual approval pending.",
+    "overview": "English staff workspace, Bangla-first self-service and a bilingual waiting-room display.",
     "donts": [
-      "English first",
       "No angled cards",
-      "No repeated dashboard cards",
-      "Status must have text",
-      "User visual approval pending"
+      "Avoid repeated dashboard cards"
     ]
   }
 }

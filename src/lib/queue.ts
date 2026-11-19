@@ -4,6 +4,10 @@ import { z } from "zod";
 import {
   AppError,
   defaultPreferences,
+  displayThemes,
+  chimeStyles,
+  type AdmissionView,
+  type PublicTicket,
   allowedTransition,
   isActive,
   type Queue,
@@ -38,7 +42,12 @@ const commandSchema = z.object({
   message: z.string().trim().max(140).optional(),
   preferences: z
     .object({
-      theme: z.enum(["midnight", "paper"]),
+      theme: z.enum(displayThemes),
+      chimeStyle: z.enum(chimeStyles).default(defaultPreferences.chimeStyle),
+      displayLanguage: z.enum(["en", "bn"]).default("en"),
+      showTiming: z.boolean().default(false),
+      serviceTarget: z.number().int().min(0).max(120).default(0),
+      selfService: z.boolean().default(false),
       upcoming: z.number().int().min(0).max(4),
       chime: z.boolean(),
       printFooter: z.string().trim().max(100),
@@ -56,7 +65,7 @@ const ticketFrom = (r: Row): Ticket => ({
 });
 function queueFrom(r?: Row): Queue {
   if (!r || (r.expires_at !== null && Number(r.expires_at) < Date.now()))
-    throw new AppError("This queue has expired. Start a fresh demo.", 404);
+    throw new AppError("This queue is unavailable or expired.", 404);
   return {
     preferences: defaultPreferences,
     id: String(r.id),
@@ -110,7 +119,11 @@ export async function queueSnapshot(db: Client, id: string): Promise<Snapshot> {
         args: [id],
       })
     ).rows[0];
-    if (preference) q.preferences = JSON.parse(String(preference.value));
+    if (preference)
+      q.preferences = {
+        ...defaultPreferences,
+        ...JSON.parse(String(preference.value)),
+      };
     const active = tickets.find((ticket) => isActive(ticket.state));
     const timing = active
       ? (
@@ -142,11 +155,13 @@ async function mutateQueueTransaction(
   db: Client,
   id: string,
   input: unknown,
+  admission = false,
 ): Promise<Result> {
   const parsed = commandSchema.safeParse(input);
   if (!parsed.success) throw new AppError("Check the request and try again.");
   const c = parsed.data;
   const payloadHash = hash(JSON.stringify(c));
+  const key = admission ? "join:" + c.key : c.key;
   // Write transactions serialize allocation and lifecycle checks at the database.
   const tx = await beginWrite(db);
   try {
@@ -157,7 +172,7 @@ async function mutateQueueTransaction(
     const previous = (
       await tx.execute({
         sql: "SELECT * FROM commands WHERE queue_id=? AND key=?",
-        args: [id, c.key],
+        args: [id, key],
       })
     ).rows[0];
     if (previous) {
@@ -167,7 +182,19 @@ async function mutateQueueTransaction(
           409,
         );
       const result: Result = JSON.parse(String(previous.result));
-      if (result.ticket) result.token = ticketToken(result.ticket.id);
+      if (result.ticket) {
+        if (
+          admission &&
+          !(
+            await tx.execute({
+              sql: "SELECT id FROM tickets WHERE queue_id=? AND id=?",
+              args: [id, result.ticket.id],
+            })
+          ).rows.length
+        )
+          throw new AppError("This ticket is no longer available.", 410);
+        result.token = ticketToken(result.ticket.id);
+      }
       return result;
     }
     if (c.action !== "issue" && c.version !== q.version)
@@ -178,6 +205,22 @@ async function mutateQueueTransaction(
     let result: Result = {};
     let eventTicketId = c.ticketId;
     if (c.action === "issue") {
+      if (admission) {
+        const preference = (
+          await tx.execute({
+            sql: "SELECT value FROM queue_preferences WHERE queue_id=?",
+            args: [id],
+          })
+        ).rows[0];
+        if (
+          !preference ||
+          JSON.parse(String(preference.value)).selfService !== true
+        )
+          throw new AppError(
+            "Self-service is closed. Please ask at the desk.",
+            409,
+          );
+      }
       if (q.paused)
         throw new AppError(
           "Ticket admission is paused. Resume the queue to issue a ticket.",
@@ -278,7 +321,7 @@ async function mutateQueueTransaction(
     });
     await tx.execute({
       sql: "INSERT INTO commands(queue_id,key,payload_hash,result,created_at) VALUES(?,?,?,?,?)",
-      args: [id, c.key, payloadHash, JSON.stringify(result), Date.now()],
+      args: [id, key, payloadHash, JSON.stringify(result), Date.now()],
     });
     await tx.commit();
     if (result.ticket) result.token = ticketToken(result.ticket.id);
@@ -412,10 +455,61 @@ export async function publicSnapshot(
     current: current ? { number: current.number, state: current.state } : null,
     theme: q.preferences.theme,
     chime: q.preferences.chime,
+    chimeStyle: q.preferences.chimeStyle,
+    language: q.preferences.displayLanguage,
+    selfService: q.preferences.selfService,
     announcedAt: q.calledAt,
     upcoming: waiting.slice(0, q.preferences.upcoming).map((t) => t.number),
     waiting: waiting.length,
     version: q.version,
     demo: q.demo,
   };
+}
+
+async function admissionQueue(db: Client, code: string) {
+  return queueFrom(
+    (
+      await db.execute({
+        sql: "SELECT * FROM queues WHERE display_id=?",
+        args: [code],
+      })
+    ).rows[0],
+  );
+}
+
+export async function admissionView(
+  db: Client,
+  code: string,
+): Promise<AdmissionView> {
+  const queue = await admissionQueue(db, code);
+  const row = (
+    await db.execute({
+      sql: "SELECT value FROM queue_preferences WHERE queue_id=?",
+      args: [queue.id],
+    })
+  ).rows[0];
+  const preferences = row
+    ? { ...defaultPreferences, ...JSON.parse(String(row.value)) }
+    : defaultPreferences;
+  return {
+    name: queue.name,
+    desk: queue.desk,
+    version: queue.version,
+    open: !queue.paused && preferences.selfService,
+    footer: preferences.printFooter,
+    message: queue.paused ? preferences.pauseMessage : "",
+  };
+}
+
+export async function joinQueue(
+  db: Client,
+  code: string,
+  key: unknown,
+): Promise<PublicTicket> {
+  const queue = await admissionQueue(db, code);
+  const result = await serializeWrite(() =>
+    mutateQueueTransaction(db, queue.id, { action: "issue", key }, true),
+  );
+  if (!result.ticket || !result.token) throw new Error("Missing issued ticket");
+  return { number: result.ticket.number, token: result.token };
 }

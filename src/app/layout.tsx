@@ -1,4 +1,5 @@
-﻿import type { Metadata } from "next";
+import "@fontsource-variable/noto-sans-bengali";
+import type { Metadata } from "next";
 import "@fontsource-variable/manrope";
 import "./globals.css";
 
