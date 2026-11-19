@@ -6,6 +6,8 @@ data/
 *.db*
 test-results/
 playwright-report/
+playwright/.cache/
+coverage/
 *.tsbuildinfo
 .artifacts/
 
