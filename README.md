@@ -1,36 +1,72 @@
 # QueueWindow
 
-A single-counter queue for service desks. Staff manage one FIFO line. Visitors can take a ticket from a QR sign or a shared kiosk and follow their turn on a private page. The waiting room has a separate public display.
+QueueWindow is a multi-tenant, multi-counter queue management SaaS for clinics, banks, and service desks. Staff and visitors can use it in Bangla or English, and tickets collect no visitor names, contact details, or other personal information.
 
-## Run locally
+## Key features
 
-Use Node.js 22 or newer.
+- Organization-scoped queues, staff accounts, and owner controls.
+- Keyboard-first staff desk for issuing, calling, recalling, skipping, and completing tickets.
+- Bilingual TV display grid with live updates over Server-Sent Events (SSE).
+- Mobile live ticket with queue position and estimated wait.
+- Printable A4 QR signs and kiosk receipts for 58 mm and 80 mm thermal printers.
+- One-click live demo with a shared queue.
 
-1. Run `npm ci`.
-2. Copy `.env.example` to `.env.local`. Generate an `APP_SECRET`, then run `npm run password` to hash a staff password of at least 12 characters. End input with Ctrl+Z then Enter on Windows, or Ctrl+D on macOS/Linux. Store the printed hash in `STAFF_PASSWORD_HASH`.
-3. Run `npm run dev` and open http://127.0.0.1:3000/login. The local queue is persisted in `data/queuewindow.db`.
+## Tech stack
 
-## Set up a venue
+- Application · Next.js App Router and TypeScript
+- Database · PostgreSQL on Neon
+- Schema and migrations · Drizzle ORM and Drizzle Kit
+- Styling and motion · Tailwind CSS and Framer Motion
+- Testing · Vitest and Playwright
 
-1. In **Settings**, enter the venue and counter names. Under **Visitor access**, allow self-service, then save. Open **Visitor access** in the staff header to print the QR sign or open the shared kiosk.
-2. Use a publicly reachable HTTPS origin before printing a sign for visitors. A localhost link is only usable on the host computer. Test the posted QR on venue Wi-Fi and mobile data. Visitors can switch between Bangla and English.
-3. Open **Public display** on a TV or monitor. Choose the display language, theme, upcoming count and chime in Settings. Chimes are off by default. If enabled, press **Call sound** on the TV once after loading it. The settings preview lets staff audition each sound.
-4. At the kiosk, choose **Get a ticket** and **Print ticket**. Select the installed printer in the browser dialog. Configure the paper width and test the receipt and QR on the actual printer. For unattended printing, a managed kiosk browser and preconfigured printer are needed. Visitors can also scan the receipt QR without printing. **Done** clears the shared screen, and the screen clears automatically after 90 seconds.
-5. Staff can keep timing off, show elapsed time, or add a service target. The target bar is staff-only. Pausing blocks new staff and self-service tickets while leaving existing tickets available to serve.
+## Routes
 
-If a connection drops during issuance, retry from the same tab. Its request key lets the server return the original ticket. The kiosk also needs a working connection to issue tickets. During an outage, direct visitors to staff and use the venue's paper fallback until the queue is reachable again.
+| Route | Purpose |
+| --- | --- |
+| `/` | Landing page and live demo entry |
+| `/login` | Owner and staff sign-in |
+| `/signup` | Create an organization and owner account |
+| `/desk` | Staff queue operations |
+| `/admin` | Owner dashboard for counters, staff, branding, and analytics |
+| `/display/[orgSlug]` | Public TV display |
+| `/join/[orgSlug]` | Mobile self-service ticket issuance |
+| `/join/[orgSlug]/ticket/[ticketId]` | Private live ticket and wait estimate |
+| `/kiosk/[orgSlug]` | On-site ticket issuance and receipt printing |
+| `/print/[orgSlug]/qr` | Printable venue QR sign |
 
-## Checks
+## Local development
+
+Use Node.js 22 and a Neon PostgreSQL database for development. From the repository root, install dependencies, copy the environment template, and generate a signing key.
 
 ```sh
-npm test
-npm run lint
-npm run build
+npm ci
+cp .env.example .env.local
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```
+
+Edit `.env.local`. Replace the `DATABASE_URL` value with your Neon connection string and set `JWT_SECRET` to the generated key. Leave `APP_URL` empty for local development.
+
+```sh
+npx drizzle-kit migrate
+npm run dev
+```
+
+Open <http://127.0.0.1:3000> and sign up or select **Try Live Demo**.
+
+## Testing and checks
+
+```sh
 npm run typecheck
+npm run lint
+npm test
+npm run build
 npx playwright install chromium
 npm run test:e2e
 ```
 
-Browser tests use an isolated database and an explicit test-only workspace fixture. Set `QW_TEST_PORT` to use a different port and `PLAYWRIGHT_CHROMIUM_EXECUTABLE` for an existing Chromium installation. Production staff sign-in requires credentials.
+- Set `QW_TEST_DATABASE_URL` in your shell to a disposable PostgreSQL database on localhost to include the Vitest integration suite. It applies migrations in a temporary schema. GitHub Actions provides PostgreSQL 16 for this suite.
+- Set `QW_E2E_DATABASE_URL` in your shell to an isolated, migrated Neon test database without an existing `demo-clinic` organization to run all Playwright journeys. Playwright starts the production build locally.
 
-See [architecture](docs/ARCHITECTURE.md), [deployment](docs/DEPLOYMENT.md), and [product scope](docs/PRODUCT_BRIEF.md). The app does not collect visitor names, phone numbers, or medical information.
+## Deployment
+
+Import the repository as a Next.js project on Vercel. Set `DATABASE_URL` to the production Neon connection string, generate a separate `JWT_SECRET`, and set `APP_URL` to the public HTTPS origin. Run `npx drizzle-kit migrate` against the production database before serving traffic. Configure preview deployments with a separate database and their own origin settings. [Vercel environment variables](https://vercel.com/docs/environment-variables)

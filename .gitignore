@@ -6,12 +6,12 @@ data/
 *.db*
 test-results/
 playwright-report/
+playwright/.cache/
+coverage/
 *.tsbuildinfo
 .artifacts/
 
 *.log
-.impeccable/config.local.json
-.impeccable/hook.cache.json
 
 .vscode/
 next-env.d.ts
