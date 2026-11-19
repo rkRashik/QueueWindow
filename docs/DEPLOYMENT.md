@@ -4,7 +4,7 @@ Use a configured Neon PostgreSQL database. Set `DATABASE_URL` and a random `JWT_
 
 ## Database upgrade
 
-For an empty database, apply `drizzle/0000_phase_1.sql` followed by `drizzle/0001_phase_2.sql`. For the existing Phase 1 Neon database that was initialized with Drizzle Kit push, apply only `drizzle/0001_phase_2.sql` once, in a single transaction. The migration backfills first-call timestamps as well as adding the Phase 2 constraints. Use a separate development database and check the target before applying SQL.
+Run `npx drizzle-kit migrate` for new databases and databases with Drizzle's migration ledger. The configured Neon database was originally initialized with Drizzle Kit push. Its existing Phase 1 schema was verified and registered as a baseline before applying Phase 2 with migrate. Check the target before applying migrations.
 
 ## Public admission and stream
 

@@ -1,13 +1,10 @@
 # Design direction
 
-This document records the original single-counter release. The SaaS rebuild adds organization authentication and multi-counter APIs. See [SaaS architecture](ARCHITECTURE.md) for current behavior.
+Phase 3A applies the [QueueWindow design system](../DESIGN.md) to desk, admin, sign-in, and signup.
 
-The staff desk pairs a waiting list with a focused active-ticket surface. Mobile keeps the primary action within reach at the bottom of the screen. The action names the actual next ticket, and optional elapsed time comes from server events.
+- The active token is the largest item on the desk. The next number sits beside the single primary call action. Completion, recall, and skip are grouped by the active ticket. Walk-in issuance and pause stay available at the foot of the panel.
+- The waiting list shows token, elapsed wait, and skip. A visibility-aware SSE connection refreshes authoritative desk state. The desk retains the last snapshot during disconnection and uses a polling fallback.
+- Admin groups daily analytics, counter controls, the team, and branding with subscription status. New staff credentials are copyable from the creation confirmation while it is open.
+- Desk and admin share an English and Bangla preference stored in the browser. The interfaces use native keyboard and focus behavior. Keyboard shortcuts yield to form fields and dialogs.
 
-The public display has Midnight, Paper, River, Clay, and Plum themes. Its ticket number, destination, and optionally visible upcoming tickets support viewing at a distance. Repeat calls replay the number reveal. Sound requires both the saved preference and a local opt-in on the display.
-
-Visitor tickets show queue position or destination and a labelled sequence of states. The sign-in form supports password managers, paste, and password visibility. Reduced-motion preferences suppress animation.
-
-Business and visitor copy, print footer, pause message, theme, and upcoming-ticket count are configurable from staff settings. The display preview uses sample data.
-
-The public entry surfaces use locally hosted Bangla typography and a large ticket action. A receipt reveal marks successful kiosk issuance. Settings group visitor access, venue details, display, timing, ticket messages, and queue operations.
+The public display, visitor screens, and landing page are Phase 3B surfaces.

@@ -499,9 +499,20 @@ describe.skipIf(!databaseUrl)("PostgreSQL queue and route integration", () => {
       await display.GET(request("/api/public/org/display"), context)
     ).json();
     expect(
-      snapshot.counters.find((counter: { id: string }) => counter.id === a.id)
-        .waitingTokens,
-    ).toEqual(["A-01", "A-02", "A-03"]);
+      snapshot.counters.find((counter: { id: string }) => counter.id === a.id),
+    ).toMatchObject({
+      waitingTokens: ["A-01", "A-02", "A-03"],
+      waitingCount: 5,
+    });
+    await admission(a.id);
+    expect(
+      (await displaySnapshot(db, orgSlug)).counters.find(
+        (counter) => counter.id === a.id,
+      ),
+    ).toMatchObject({
+      waitingTokens: ["A-01", "A-02", "A-03"],
+      waitingCount: 6,
+    });
     expect(JSON.stringify(snapshot)).not.toContain(ticket.ticketId);
 
     const events = await stream.GET(request("/api/public/org/stream"), context);

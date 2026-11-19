@@ -27,7 +27,7 @@ The HTTP-only `qw_session` cookie carries a signed 24-hour JWT. Next.js Proxy re
 | `GET /api/admin/analytics` | Return daily organization totals and a per-counter breakdown. |
 | `GET /api/desk/state?counterId=…` | List counters and return the selected queue and daily stats. Omitting the ID selects the first counter. |
 | `POST /api/desk/action` | Send `action` and `counterId`. `ISSUE_WALKIN` also takes an idempotency key. `COMPLETE`, `SKIP`, and `RECALL` take a ticket ID. |
-| `GET /api/public/[orgSlug]/display` | Read branding, the called token, and up to three waiting tokens per counter. |
+| `GET /api/public/[orgSlug]/display` | Read branding, the called token, the waiting count, and up to three waiting tokens per counter. |
 | `POST /api/public/[orgSlug]/join` | Send `counterId` and a UUID v4 `idempotencyKey`. Keep the key for retries of the same request. |
 | `GET /api/public/[orgSlug]/ticket/[ticketId]` | Read status, counter name, people ahead, and estimated wait using the ticket ID returned on admission. |
 | `GET /api/public/[orgSlug]/stream` | Receive an SSE `snapshot` immediately, followed by `update` events when display data changes. |
@@ -36,4 +36,4 @@ Public display data contains ticket numbers and excludes private ticket IDs. Pub
 
 The stream polls an indexed PostgreSQL snapshot every two seconds without holding a transaction open. It closes after 25 seconds and sends `retry: 2000` for automatic reconnection.
 
-Phase 3 covers the dashboard, desk, visitor and TV interfaces. Password recovery and deployment are outside Phase 2. The original single-counter release is available in Git history.
+Phase 3A adds the staff desk, owner administration, and auth screens. The desk refreshes its authenticated snapshot on SSE events and polls while visible as a fallback. The public TV, visitor, and landing screens are planned for Phase 3B. The original single-counter release is available in Git history.

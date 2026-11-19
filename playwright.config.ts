@@ -14,7 +14,12 @@ export default defineConfig({
   webServer: {
     command: `npm run start -- --port ${port}`,
     url: `${baseURL}/login`,
-    env: { APP_URL: baseURL },
+    env: {
+      APP_URL: baseURL,
+      ...(process.env.QW_E2E_DATABASE_URL
+        ? { DATABASE_URL: process.env.QW_E2E_DATABASE_URL }
+        : {}),
+    },
     timeout: 60_000,
   },
 });

@@ -66,9 +66,11 @@ test("keyboard users can operate the sign-in form and find submission feedback",
   ).toBeFocused();
   await page.keyboard.press("Tab");
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("main").getByRole("alert")).toHaveText(
-    "Enter a valid email or username and password.",
-  );
+  await expect(identifier).toHaveAttribute("aria-invalid", "true");
+  await expect(identifier).toBeFocused();
+  await expect(
+    page.getByText("Enter a valid email or username.", { exact: true }),
+  ).toBeVisible();
 });
 
 for (const path of ["/login", "/signup"]) {

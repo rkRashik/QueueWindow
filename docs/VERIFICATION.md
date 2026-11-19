@@ -1,5 +1,13 @@
 # Verification
 
+## SaaS Phase 3A (19 November 2026)
+
+- The configured Neon database already had the Phase 1 schema from Drizzle Kit push. The verified baseline was registered in the migration ledger. Drizzle Kit migrate applied Phase 2, and both migration hashes matched this checkout.
+- Typecheck, ESLint, the production build, and all 20 Vitest tests passed. Integration tests used a disposable PostgreSQL 18 database.
+- All 8 Chromium tests passed against the production build. The authenticated journeys used isolated Neon organizations and covered live updates past the TV snapshot’s first three tickets, desk shortcuts, offline recovery, Bangla persistence, counter and staff management, dialog focus restoration, credential copying, and staff redirection from admin.
+- Reviewed desktop and mobile captures, including Bangla, plus sampled axe checks, accessible names, keyboard operation, and auth reflow at simulated 200% zoom. Native screen readers remain untested.
+
+
 ## SaaS Phase 2 (19 November 2026)
 
 - Typecheck, ESLint, the production build, and Drizzle migration validation passed. Next.js used the Proxy convention.

@@ -51,6 +51,10 @@ export async function displaySnapshot(db: Database, slug: string) {
       },
       called: { tokenNumber: active.tokenNumber, calledAt: active.calledAt },
       waitingTokens: sql<string[]>`array(${next})`,
+      waitingCount:
+        sql<number>`(select count(*) from ${tickets} where ${scope} and ${tickets.status} = 'WAITING')`.mapWith(
+          Number,
+        ),
     })
     .from(organizations)
     .leftJoin(counters, eq(counters.orgId, organizations.id))
@@ -68,6 +72,7 @@ export async function displaySnapshot(db: Database, slug: string) {
               ...row.counter,
               calledTicket: row.called,
               waitingTokens: row.waitingTokens ?? [],
+              waitingCount: row.waitingCount,
             },
           ]
         : [],

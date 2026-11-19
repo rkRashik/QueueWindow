@@ -1,6 +1,6 @@
 # QueueWindow
 
-QueueWindow is a multi-tenant service queue. Phase 2 adds multi-counter issuance and desk actions, owner administration and analytics, public admission and ticket status, and the TV display API and event stream.
+QueueWindow is a multi-tenant service queue. Phase 3A provides an English and Bangla service desk, owner administration, and workspace signup and sign-in. Multi-counter queueing and live updates use PostgreSQL.
 
 ## Run locally
 
@@ -24,3 +24,5 @@ npm run test:e2e
 Set `QW_TEST_DATABASE_URL` to a disposable loopback PostgreSQL database before `npm test` to include the integration suite. The test database user needs permission to create and drop a temporary schema. Tests apply both SQL migrations inside that schema.
 
 Browser checks can use an existing Chromium binary via `PLAYWRIGHT_CHROMIUM_EXECUTABLE`. Set `QW_TEST_PORT` to change the local test port.
+
+Set QW_E2E_DATABASE_URL to a migrated Neon test database to include the authenticated workspace browser journeys. The test suite creates and removes uniquely named organizations.
