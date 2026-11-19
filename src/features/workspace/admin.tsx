@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+} from "framer-motion";
 import Link from "next/link";
 import {
   BarChart3,
@@ -11,7 +18,7 @@ import {
   Users,
   Workflow,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import type { analytics } from "@/features/queue/read-model";
 import { formatNumber } from "@/lib/i18n";
 import { BrandingSection, type Branding } from "./branding";
@@ -24,6 +31,96 @@ import { Notice, Toast, useToast, WorkspaceHeader, type Workspace } from "./ui";
 export const sections = ["overview", "counters", "team", "branding"] as const;
 export type AdminSection = (typeof sections)[number];
 export type AdminWorkspace = Workspace & Branding;
+
+function CountUp({
+  value,
+  format,
+}: {
+  value: number;
+  format: (value: number) => string;
+}) {
+  const reduce = useReducedMotion();
+  const motionValue = useMotionValue(reduce ? value : 0);
+  const text = useTransform(motionValue, (latest) =>
+    format(Math.round(latest)),
+  );
+  useEffect(() => {
+    if (reduce) {
+      motionValue.set(value);
+      return;
+    }
+    const controls = animate(motionValue, value, {
+      duration: 0.9,
+      ease: [0.16, 1, 0.3, 1],
+    });
+    return () => controls.stop();
+  }, [motionValue, reduce, value]);
+  return <motion.span>{text}</motion.span>;
+}
+
+function Kpi({
+  index,
+  label,
+  tone,
+  Icon,
+  children,
+}: {
+  index: number;
+  label: string;
+  tone: string;
+  Icon: typeof Ticket;
+  children: ReactNode;
+}) {
+  return (
+    <motion.div
+      className="surface relative overflow-hidden p-4.5 sm:p-5"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+      transition={{
+        type: "spring",
+        stiffness: 380,
+        damping: 30,
+        delay: index * 0.06,
+      }}
+    >
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-x-5 top-0 h-px [mask-image:linear-gradient(90deg,transparent,#000_30%,#000_70%,transparent)] ${tone}`}
+      />
+      <div className="flex items-center justify-between gap-2 text-sm font-bold text-muted">
+        <h2>{label}</h2>
+        <span
+          className={`grid size-8 place-items-center rounded-lg ring-1 ring-inset ${tone === "bg-indigo-400" ? "bg-indigo-50 text-indigo-700 ring-indigo-200/70" : tone === "bg-emerald-400" ? "bg-emerald-50 text-emerald-700 ring-emerald-200/70" : tone === "bg-amber-400" ? "bg-amber-50 text-amber-700 ring-amber-200/70" : "bg-sky-50 text-sky-700 ring-sky-200/70"}`}
+        >
+          <Icon className="size-4 shrink-0" aria-hidden="true" />
+        </span>
+      </div>
+      {children}
+    </motion.div>
+  );
+}
+
+function Pill({
+  tone,
+  children,
+}: {
+  tone: "amber" | "rose" | "emerald";
+  children: ReactNode;
+}) {
+  const colors = {
+    amber: "bg-amber-50 text-amber-900 ring-amber-600/20",
+    rose: "bg-rose-50 text-rose-800 ring-rose-600/20",
+    emerald: "bg-emerald-50 text-emerald-800 ring-emerald-600/15",
+  }[tone];
+  return (
+    <span
+      className={`inline-flex min-w-7 justify-center rounded-full px-2 py-0.5 text-xs font-extrabold ring-1 ring-inset ${colors}`}
+    >
+      {children}
+    </span>
+  );
+}
 
 function Overview() {
   const { t, language } = useLocale();
@@ -45,36 +142,54 @@ function Overview() {
       {data && (
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              { label: t.issued, value: data.totals.issued, Icon: Ticket },
-              { label: t.served, value: data.totals.served, Icon: CheckCheck },
-              {
-                label: t.waiting,
-                value: data.totals.waiting,
-                Icon: ListOrdered,
-              },
-            ].map(({ label, value, Icon }) => (
-              <div className="panel p-4.5 sm:p-5" key={label}>
-                <div className="flex items-center justify-between gap-2 text-sm font-bold text-muted">
-                  <h2>{label}</h2>
-                  <Icon
-                    className="size-4 shrink-0 text-brand"
-                    aria-hidden="true"
-                  />
-                </div>
-                <p className="mt-4 text-3xl leading-none font-extrabold -tracking-[.04em] tabular-nums">
-                  {number(value)}
-                </p>
-              </div>
-            ))}
-            <div className="panel p-4.5 sm:p-5">
-              <div className="flex items-center justify-between gap-2 text-sm font-bold text-muted">
-                <h2>{t.timing}</h2>
-                <Clock3
-                  className="size-4 shrink-0 text-brand"
-                  aria-hidden="true"
+            <Kpi index={0} label={t.issued} tone="bg-indigo-400" Icon={Ticket}>
+              <p className="mt-4 text-3xl leading-none font-extrabold -tracking-[.04em] tabular-nums">
+                <CountUp value={data.totals.issued} format={number} />
+              </p>
+              <p className="mt-3 text-xs font-semibold text-muted">{t.today}</p>
+            </Kpi>
+            <Kpi
+              index={1}
+              label={t.served}
+              tone="bg-emerald-400"
+              Icon={CheckCheck}
+            >
+              <p className="mt-4 text-3xl leading-none font-extrabold -tracking-[.04em] tabular-nums">
+                <CountUp value={data.totals.served} format={number} />
+              </p>
+              <div
+                aria-hidden="true"
+                className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100"
+              >
+                <motion.div
+                  className="h-full rounded-full bg-linear-to-r from-emerald-400 to-emerald-600"
+                  initial={{ width: 0 }}
+                  animate={{
+                    width: `${data.totals.issued ? Math.round((100 * data.totals.served) / data.totals.issued) : 0}%`,
+                  }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
                 />
               </div>
+            </Kpi>
+            <Kpi
+              index={2}
+              label={t.waiting}
+              tone="bg-amber-400"
+              Icon={ListOrdered}
+            >
+              <p className="mt-4 flex items-center gap-2.5 text-3xl leading-none font-extrabold -tracking-[.04em] tabular-nums">
+                <CountUp value={data.totals.waiting} format={number} />
+                {data.totals.waiting > 0 && (
+                  <span
+                    className="live-dot !bg-amber-500"
+                    style={{ boxShadow: "0 0 8px 1px rgba(245,158,11,0.7)" }}
+                    aria-hidden="true"
+                  />
+                )}
+              </p>
+              <p className="mt-3 text-xs font-semibold text-muted">{t.today}</p>
+            </Kpi>
+            <Kpi index={3} label={t.timing} tone="bg-sky-400" Icon={Clock3}>
               <dl className="mt-3 grid grid-cols-2 gap-2">
                 <div>
                   <dt className="text-xs font-semibold text-muted">
@@ -93,9 +208,12 @@ function Overview() {
                   </dd>
                 </div>
               </dl>
-            </div>
+            </Kpi>
           </div>
-          <section aria-labelledby="performance" className="panel mt-5">
+          <section
+            aria-labelledby="performance"
+            className="surface mt-5 overflow-hidden"
+          >
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-4 sm:px-5">
               <h2 id="performance" className="section-heading">
                 {t.performance}
@@ -131,9 +249,23 @@ function Overview() {
                     <tr key={counter.counterId}>
                       <td className="font-extrabold">{counter.name}</td>
                       <td>{number(counter.issued)}</td>
-                      <td>{number(counter.served)}</td>
-                      <td>{number(counter.waiting)}</td>
-                      <td>{number(counter.skipped)}</td>
+                      <td>
+                        <Pill tone="emerald">{number(counter.served)}</Pill>
+                      </td>
+                      <td>
+                        {counter.waiting ? (
+                          <Pill tone="amber">{number(counter.waiting)}</Pill>
+                        ) : (
+                          number(counter.waiting)
+                        )}
+                      </td>
+                      <td>
+                        {counter.skipped ? (
+                          <Pill tone="rose">{number(counter.skipped)}</Pill>
+                        ) : (
+                          number(counter.skipped)
+                        )}
+                      </td>
                       <td className="whitespace-nowrap">
                         {minutes(counter.avgWaitMinutes)}
                       </td>
@@ -163,6 +295,7 @@ function Admin({
   section: AdminSection;
 }) {
   const { t } = useLocale();
+  const navPill = useId();
   const [branding, setBranding] = useState<Branding>(workspace);
   const toast = useToast();
   const items = [
@@ -187,10 +320,17 @@ function Admin({
               key={id}
               href={id === "overview" ? "/admin" : `/admin?section=${id}`}
               aria-current={id === section ? "page" : undefined}
-              className={`flex min-h-11 min-w-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-bold ${id === section ? "bg-indigo-50 text-indigo-800" : "text-muted hover:bg-slate-100 hover:text-ink"}`}
+              className={`relative flex min-h-11 min-w-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-bold ${id === section ? "text-indigo-800" : "text-muted hover:bg-slate-100 hover:text-ink"}`}
             >
-              <Icon className="nav-icon" aria-hidden="true" />
-              {label}
+              {id === section && (
+                <motion.span
+                  layoutId={navPill}
+                  className="absolute inset-0 rounded-lg bg-indigo-50 shadow-[inset_0_0_0_1px_rgba(99,102,241,0.18),0_1px_2px_rgba(79,70,229,0.08)]"
+                  transition={{ type: "spring", stiffness: 500, damping: 36 }}
+                />
+              )}
+              <Icon className="nav-icon relative" aria-hidden="true" />
+              <span className="relative">{label}</span>
             </Link>
           ))}
         </nav>

@@ -49,6 +49,7 @@ export function VisitorShell({
   const { language } = usePublicLocale();
   return (
     <main id="main" lang={language} className="visitor-shell">
+      <div className="visitor-ambient no-print" aria-hidden="true" />
       <header
         className="visitor-header no-print"
         style={

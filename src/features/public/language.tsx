@@ -1,8 +1,10 @@
 "use client";
 
+import { motion } from "framer-motion";
 import {
   createContext,
   useContext,
+  useId,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -146,6 +148,7 @@ export function usePublicLocale() {
 
 export function PublicLanguage() {
   const { language, t } = usePublicLocale();
+  const pill = useId();
   return (
     <div className="visitor-language" role="group" aria-label={t.language}>
       {(
@@ -161,7 +164,14 @@ export function PublicLanguage() {
           aria-pressed={code === language}
           onClick={() => choose(code)}
         >
-          {label}
+          {code === language && (
+            <motion.span
+              layoutId={pill}
+              className="absolute inset-0 rounded-full bg-slate-900"
+              transition={{ type: "spring", stiffness: 500, damping: 36 }}
+            />
+          )}
+          <span className="relative">{label}</span>
         </button>
       ))}
     </div>

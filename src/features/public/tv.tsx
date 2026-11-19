@@ -1,8 +1,8 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Bell, Clock3, Mic, Volume2, WifiOff } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { announce, useChime } from "./audio";
 import { usePublicFeed, type PublicCounter } from "./live";
 import { VenueMark } from "./ui";
@@ -29,7 +29,7 @@ function DhakaClock() {
   return (
     <div className="tv-clock" aria-label="Dhaka time">
       <Clock3
-        className="size-[1em] shrink-0 text-slate-400"
+        className="size-[0.8em] shrink-0 text-slate-400"
         aria-hidden="true"
       />
       <time className="tabular-nums" dateTime={now?.toISOString()}>
@@ -60,10 +60,15 @@ function callKey(counter: PublicCounter) {
 
 function CounterCard({ counter }: { counter: PublicCounter }) {
   const id = useId();
-  const reduce = useReducedMotion();
   const active = counter.calledTicket?.tokenNumber;
+  const key = callKey(counter);
   return (
-    <section aria-labelledby={id} className="tv-card">
+    <section
+      aria-labelledby={id}
+      className="tv-card"
+      data-active={active ? "true" : "false"}
+    >
+      <span className="tv-accent" aria-hidden="true" />
       <header className="tv-card-head">
         <h2 id={id} className="min-w-0 break-words">
           {counter.name}
@@ -80,19 +85,22 @@ function CounterCard({ counter }: { counter: PublicCounter }) {
           <AnimatePresence initial={false} mode="wait">
             <motion.p
               layout={false}
-              key={callKey(counter) ?? "idle"}
-              initial={reduce ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={
-                reduce
-                  ? undefined
-                  : { opacity: 0, y: -5, transition: { duration: 0.1 } }
-              }
-              transition={
-                reduce
-                  ? { duration: 0 }
-                  : { type: "spring", stiffness: 340, damping: 29, mass: 0.75 }
-              }
+              key={key ?? "idle"}
+              initial={{ opacity: 0, y: 36, scale: 0.94, rotateX: -40 }}
+              animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
+              exit={{
+                opacity: 0,
+                y: -36,
+                scale: 0.94,
+                rotateX: 40,
+                transition: { duration: 0.12 },
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 380,
+                damping: 26,
+                mass: 0.8,
+              }}
               className={`tv-token tabular-nums ${active ? "" : "tv-token-idle"}`}
               data-testid="tv-called-token"
               translate="no"
@@ -101,24 +109,42 @@ function CounterCard({ counter }: { counter: PublicCounter }) {
             </motion.p>
           </AnimatePresence>
         </div>
+        {key && (
+          // Radiant ring: replays on every new or recalled call.
+          <motion.span
+            key={key}
+            className="tv-ring"
+            aria-hidden="true"
+            initial={{ opacity: 0.95, scale: 0.97 }}
+            animate={{ opacity: 0, scale: 1.04 }}
+            transition={{ duration: 1.3, ease: "easeOut" }}
+          />
+        )}
       </div>
       <div className="tv-next">
         <LanguagePair bn="পরবর্তী" en="UP NEXT" />
         <ol
-          className="flex min-w-0 flex-wrap items-center gap-2"
+          className="flex min-w-0 items-center gap-2 overflow-hidden"
           aria-label="Upcoming ticket numbers"
         >
-          {(counter.waitingTokens.length ? counter.waitingTokens : ["—"]).map(
-            (token, i) => (
-              <li
-                className="tv-upcoming tabular-nums"
-                key={`${token}-${i}`}
-                translate="no"
-              >
-                {token}
-              </li>
-            ),
-          )}
+          <AnimatePresence initial={false} mode="popLayout">
+            {(counter.waitingTokens.length ? counter.waitingTokens : ["—"]).map(
+              (token) => (
+                <motion.li
+                  layout
+                  key={token}
+                  className="tv-upcoming tabular-nums"
+                  translate="no"
+                  initial={{ opacity: 0, scale: 0.8, x: 18 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, x: -18 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                >
+                  {token}
+                </motion.li>
+              ),
+            )}
+          </AnimatePresence>
         </ol>
       </div>
     </section>
@@ -153,123 +179,127 @@ export function TvScreen({ slug }: { slug: string }) {
   }, [chimeEnabled, counters, play, voiceEnabled]);
 
   const count = counters?.length ?? 0;
+  const cols =
+    count <= 1 ? 1 : count <= 3 ? count : count === 4 ? 2 : count <= 6 ? 3 : 4;
   return (
     <main id="main" className="tv-shell">
+      <div className="tv-aurora" aria-hidden="true" />
       <header className="tv-head">
-        <div className="flex min-w-0 items-center gap-4">
+        <div className="flex min-w-0 items-center gap-3">
           <VenueMark
             key={data?.organization.logoUrl}
             logoUrl={data?.organization.logoUrl}
             primaryColor={data?.organization.primaryColor}
           />
-          <h1 className="min-w-0 break-words text-[clamp(1.25rem,2.7vw,2.4rem)] leading-tight font-extrabold tracking-tight">
+          <h1 className="min-w-0 truncate text-[clamp(1.1rem,2vw,1.6rem)] leading-tight font-extrabold tracking-tight">
             {data?.organization.name ?? "QueueWindow"}
           </h1>
         </div>
-        <DhakaClock />
-      </header>
-
-      <div className="tv-toolbar">
-        <div className="flex min-h-8 items-center">
-          {reconnecting && (
+        <div className="flex shrink-0 items-center gap-4 sm:gap-6">
+          {reconnecting ? (
             <p
               role="status"
-              className="flex flex-wrap items-center gap-1.5 text-sm text-slate-300"
+              className="flex items-center gap-1.5 text-sm text-amber-200"
             >
               <WifiOff className="size-4" aria-hidden="true" />
               <LanguagePair bn="আবার সংযোগ হচ্ছে…" en="Reconnecting…" />
             </p>
+          ) : (
+            <span className="tv-live">
+              <span className="live-dot" aria-hidden="true" />
+              LIVE
+            </span>
           )}
+          <DhakaClock />
         </div>
-        <div
-          className="flex flex-wrap gap-2"
-          role="group"
-          aria-label="Display audio"
-        >
-          {status !== "ready" && (
-            <button
-              type="button"
-              className="tv-control tv-unlock"
-              onClick={async () => {
-                if (await unlock()) {
-                  setChimeEnabled(true);
-                  play();
-                }
-              }}
-            >
-              <Volume2 className="size-4" aria-hidden="true" />
-              <LanguagePair bn="শব্দ চালু করুন" en="Enable Sound" />
-            </button>
-          )}
-          <button
-            type="button"
-            className="tv-control"
-            disabled={status !== "ready"}
-            aria-pressed={chimeEnabled}
-            onClick={() => setChimeEnabled(!chimeEnabled)}
+      </header>
+
+      <div className="tv-body">
+        {(status === "unavailable" || noVoice) && (
+          <p role="status" className="mb-3 text-sm text-slate-300">
+            Audio controls may be unavailable on this device.
+          </p>
+        )}
+        {error && !data ? (
+          <div className="tv-panel" role="alert">
+            <LanguagePair
+              bn="সারির তথ্য পাওয়া যাচ্ছে না।"
+              en="The queue is unavailable."
+            />
+            {error !== 404 && (
+              <button
+                type="button"
+                className="tv-control mt-3 bg-white/10"
+                onClick={() => void refresh()}
+              >
+                <LanguagePair bn="আবার চেষ্টা করুন" en="Try again" />
+              </button>
+            )}
+          </div>
+        ) : !data ? (
+          <p className="tv-panel" role="status">
+            <LanguagePair bn="সারি লোড হচ্ছে…" en="Loading the queue…" />
+          </p>
+        ) : count === 0 ? (
+          <p className="tv-panel">
+            <LanguagePair bn="কোনো কাউন্টার নেই" en="No counters available" />
+          </p>
+        ) : (
+          <div
+            className="tv-grid"
+            data-count={count}
+            style={{ "--tv-cols": cols } as CSSProperties}
           >
-            <Bell className="size-4" aria-hidden="true" />
-            <LanguagePair bn="ঘণ্টা" en="Chime" />
-          </button>
+            {counters?.map((counter) => (
+              <CounterCard key={counter.id} counter={counter} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="tv-dock" role="group" aria-label="Display audio">
+        {status !== "ready" && (
           <button
             type="button"
-            className="tv-control"
-            aria-pressed={voiceEnabled}
-            onClick={() => {
-              if (!("speechSynthesis" in window)) {
-                setNoVoice(true);
-                return;
+            className="tv-control tv-unlock"
+            onClick={async () => {
+              if (await unlock()) {
+                setChimeEnabled(true);
+                play();
               }
-              if (voiceEnabled) window.speechSynthesis.cancel();
-              setVoiceEnabled(!voiceEnabled);
             }}
           >
-            <Mic className="size-4" aria-hidden="true" />
-            <LanguagePair bn="কণ্ঠ ঘোষণা" en="Voice Announcement" />
+            <Volume2 className="size-4" aria-hidden="true" />
+            <LanguagePair bn="শব্দ চালু করুন" en="Enable Sound" />
           </button>
-        </div>
-      </div>
-      {(status === "unavailable" || noVoice) && (
-        <p role="status" className="mb-3 text-sm text-slate-300">
-          Audio controls may be unavailable on this device.
-        </p>
-      )}
-      {error && !data ? (
-        <div className="tv-card p-6" role="alert">
-          <LanguagePair
-            bn="সারির তথ্য পাওয়া যাচ্ছে না।"
-            en="The queue is unavailable."
-          />
-          {error !== 404 && (
-            <button
-              type="button"
-              className="tv-control mt-3"
-              onClick={() => void refresh()}
-            >
-              <LanguagePair bn="আবার চেষ্টা করুন" en="Try again" />
-            </button>
-          )}
-        </div>
-      ) : !data ? (
-        <p className="tv-card p-6" role="status">
-          <LanguagePair bn="সারি লোড হচ্ছে…" en="Loading the queue…" />
-        </p>
-      ) : count === 0 ? (
-        <p className="tv-card p-6">
-          <LanguagePair bn="কোনো কাউন্টার নেই" en="No counters available" />
-        </p>
-      ) : (
-        <div
-          className="tv-grid"
-          data-layout={
-            count === 1 ? "single" : count > 4 ? "dense" : "standard"
-          }
+        )}
+        <button
+          type="button"
+          className="tv-control"
+          disabled={status !== "ready"}
+          aria-pressed={chimeEnabled}
+          onClick={() => setChimeEnabled(!chimeEnabled)}
         >
-          {counters?.map((counter) => (
-            <CounterCard key={counter.id} counter={counter} />
-          ))}
-        </div>
-      )}
+          <Bell className="size-4" aria-hidden="true" />
+          <LanguagePair bn="ঘণ্টা" en="Chime" />
+        </button>
+        <button
+          type="button"
+          className="tv-control"
+          aria-pressed={voiceEnabled}
+          onClick={() => {
+            if (!("speechSynthesis" in window)) {
+              setNoVoice(true);
+              return;
+            }
+            if (voiceEnabled) window.speechSynthesis.cancel();
+            setVoiceEnabled(!voiceEnabled);
+          }}
+        >
+          <Mic className="size-4" aria-hidden="true" />
+          <LanguagePair bn="কণ্ঠ ঘোষণা" en="Voice Announcement" />
+        </button>
+      </div>
     </main>
   );
 }

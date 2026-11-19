@@ -9,6 +9,7 @@ import {
   Clock3,
   CornerDownLeft,
   ListOrdered,
+  LogOut,
   Monitor,
   Pause,
   Play,
@@ -18,18 +19,19 @@ import {
   Settings2,
   SkipForward,
   Ticket,
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatElapsed, formatNumber } from "@/lib/i18n";
 import { api, ApiError, jsonRequest } from "./client";
 import { useDeskState, type DeskSnapshot } from "./desk-state";
-import { LocaleProvider, useLocale } from "./locale";
+import { LanguageSwitch, LocaleProvider, useLocale } from "./locale";
 import {
   Notice,
   StatusPill,
   Toast,
   useToast,
-  WorkspaceHeader,
+  Wordmark,
   type Workspace,
 } from "./ui";
 
@@ -79,70 +81,77 @@ function WaitingQueue({
   return (
     <section
       aria-labelledby="waiting-title"
-      className="panel self-start overflow-hidden"
+      className="surface flex min-h-0 flex-col overflow-hidden"
     >
-      <div className="eyeline flex items-center justify-between gap-3 px-5 py-4.5 sm:px-6">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/70 px-5 py-3.5">
         <div className="flex items-center gap-2.5">
           <ListOrdered aria-hidden="true" className="size-4.5 text-muted" />
           <h2 id="waiting-title" className="section-heading">
             {t.waitingQueue}
           </h2>
         </div>
-        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-extrabold text-amber-900 tabular-nums">
+        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-extrabold text-amber-900 ring-1 ring-amber-600/20 tabular-nums ring-inset">
           {formatNumber(tickets.length, language)}
         </span>
       </div>
-      {tickets.length > 0 && (
-        <div className="grid grid-cols-[minmax(0,1fr)_max-content_5.5rem] items-center gap-2 px-5 pt-3 text-xs font-bold text-muted sm:px-6">
-          <span>{t.ticket}</span>
-          <span className="text-end">{t.waitingLabel}</span>
-        </div>
-      )}
       {tickets.length === 0 && (
-        <p className="px-5 pt-6 pb-8 text-sm text-muted sm:px-6">
-          {t.queueEmpty}
-        </p>
+        <div className="grid flex-1 place-content-center justify-items-center gap-2 p-8 text-center">
+          <span className="grid size-11 place-items-center rounded-xl border border-line bg-slate-50 text-muted">
+            <ListOrdered className="size-5" aria-hidden="true" />
+          </span>
+          <p className="text-sm text-muted">{t.queueEmpty}</p>
+        </div>
       )}
       <ul
         aria-labelledby="waiting-title"
-        className="divide-y divide-slate-100 px-5 sm:px-6"
+        tabIndex={0}
+        className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2.5 empty:hidden"
       >
         <AnimatePresence initial={false}>
-          {tickets.map((item) => (
-            <motion.li
-              key={item.id}
-              layout={reduce ? false : "position"}
-              initial={reduce ? false : { opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? undefined : { opacity: 0, y: -4 }}
-              transition={{
-                duration: reduce ? 0 : 0.16,
-                ease: [0.2, 0.8, 0.2, 1],
-              }}
-              className="grid grid-cols-[minmax(0,1fr)_max-content_5.5rem] items-center gap-2 py-2"
-            >
-              <span
-                className="min-w-0 break-all text-[1.05rem] font-extrabold tabular-nums"
-                translate="no"
+          {tickets.map((item, index) => {
+            const seconds = elapsed(now, item.issuedAt);
+            return (
+              <motion.li
+                key={item.id}
+                layout={reduce ? false : "position"}
+                initial={reduce ? false : { opacity: 0, x: -14 }}
+                animate={{
+                  opacity: 1,
+                  x: 0,
+                  transition: { delay: Math.min(index, 8) * 0.035 },
+                }}
+                exit={reduce ? undefined : { opacity: 0, x: 18, height: 0 }}
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                className={`group grid grid-cols-[1.75rem_minmax(0,1fr)_max-content_max-content] items-center gap-2 rounded-xl border px-2.5 py-1.5 transition-colors hover:border-slate-200 hover:bg-slate-50 ${index === 0 ? "border-indigo-100 bg-indigo-50/60" : "border-transparent"}`}
               >
-                {item.tokenNumber}
-              </span>
-              <span className="ms-auto flex items-center gap-1.5 text-sm font-semibold text-muted tabular-nums">
-                <Clock3 aria-hidden="true" className="size-3.5" />
-                {formatElapsed(elapsed(now, item.issuedAt), language)}
-              </span>
-              <button
-                type="button"
-                className="btn btn-quiet ms-auto px-2 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                disabled={!canAct}
-                aria-label={`${t.skip} ${item.tokenNumber}`}
-                onClick={() => onSkip(item.id)}
-              >
-                <SkipForward aria-hidden="true" />
-                {t.skip}
-              </button>
-            </motion.li>
-          ))}
+                <span className="text-center text-xs font-bold text-slate-500 tabular-nums">
+                  {formatNumber(index + 1, language)}
+                </span>
+                <span
+                  className="min-w-0 break-all text-[1.05rem] font-extrabold tabular-nums"
+                  translate="no"
+                >
+                  {item.tokenNumber}
+                </span>
+                <span
+                  className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${seconds > 600 ? "bg-amber-50 text-amber-900 ring-1 ring-amber-600/20 ring-inset" : "bg-slate-100 text-slate-700"}`}
+                >
+                  <Clock3 aria-hidden="true" className="size-3" />
+                  {formatElapsed(seconds, language)}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-quiet min-h-8 px-2 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800 focus-visible:opacity-100 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
+                  disabled={!canAct}
+                  aria-label={`${t.skip} ${item.tokenNumber}`}
+                  onClick={() => onSkip(item.id)}
+                >
+                  <SkipForward aria-hidden="true" />
+                  {t.skip}
+                </button>
+              </motion.li>
+            );
+          })}
         </AnimatePresence>
       </ul>
     </section>
@@ -154,6 +163,7 @@ function Desk({ workspace }: { workspace: Workspace }) {
   const { data, selected, selectCounter, refresh, error, online, link } =
     useDeskState(workspace.slug);
   const [expired, setExpired] = useState(false);
+  const [demoNotice, setDemoNotice] = useState(true);
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const actionInProgress = useRef(false);
@@ -279,20 +289,31 @@ function Desk({ workspace }: { workspace: Workspace }) {
     return () => document.removeEventListener("keydown", keyDown);
   }, [active, canAct, canIssue, next, perform]);
 
+  const iconLink = "btn btn-quiet min-h-9 px-2.5";
+  const linkText = "sr-only 2xl:not-sr-only";
   return (
-    <>
-      <WorkspaceHeader organization={workspace.name} surface="desk">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
-            <label
-              htmlFor="counter-choice"
-              className="text-xs font-extrabold text-muted"
-            >
+    <div className="flex min-h-dvh flex-col bg-canvas lg:h-dvh lg:overflow-hidden">
+      <header className="z-10 shrink-0 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 lg:h-14 lg:flex-nowrap lg:px-6 lg:py-0">
+          <Wordmark />
+          <span
+            className="hidden max-w-[22ch] truncate rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700 xl:block"
+            title={workspace.name}
+          >
+            {workspace.name}
+          </span>
+          <span
+            className="hidden h-5 border-s border-line lg:block"
+            aria-hidden="true"
+          />
+          <h1 className="text-sm font-extrabold tracking-tight">{t.desk}</h1>
+          <div className="flex min-w-0 items-center gap-2">
+            <label htmlFor="counter-choice" className="sr-only">
               {t.counter}
             </label>
             <select
               id="counter-choice"
-              className="field w-auto max-w-[min(14rem,65vw)] py-1.5 text-sm font-bold"
+              className="field min-h-9 w-auto max-w-[min(13rem,45vw)] rounded-lg py-1 text-sm font-bold"
               value={selected}
               disabled={busy || !data?.counters.length}
               onChange={(event) => selectCounter(event.target.value)}
@@ -306,81 +327,87 @@ function Desk({ workspace }: { workspace: Workspace }) {
             </select>
             {counter && <StatusPill status={counter.status} />}
           </div>
-          <nav
-            className="flex flex-wrap items-center gap-1"
-            aria-label={t.desk}
-          >
-            <a
-              className="btn btn-quiet"
-              href={`/display/${workspace.slug}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Monitor aria-hidden="true" />
-              {t.tv}
-            </a>
-            <a
-              className="btn btn-quiet"
-              href={`/join/${workspace.slug}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <QrCode aria-hidden="true" />
-              {t.visitorLink}
-            </a>
-            <a
-              className="btn btn-quiet"
-              href={`/print/${workspace.slug}/qr`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Printer aria-hidden="true" />
-              {t.printQr}
-            </a>
-            {workspace.role === "OWNER" && (
-              <Link className="btn btn-quiet" href="/admin">
-                <Settings2 aria-hidden="true" />
-                {t.admin}
-              </Link>
-            )}
-          </nav>
-        </div>
-      </WorkspaceHeader>
-
-      <main id="main" className="shell-width py-7 sm:py-9">
-        {workspace.demo && (
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm text-indigo-950">
-            <div>
-              <strong>{t.liveDemo}</strong>
-              <span className="ms-2">{t.demoDetail}</span>
-            </div>
-            <div className="flex flex-wrap gap-1">
+          <div className="ms-auto flex flex-wrap items-center gap-1 sm:gap-1.5">
+            <nav className="flex items-center gap-0.5" aria-label={t.desk}>
               <a
-                className="btn btn-quiet"
+                className={iconLink}
                 href={`/display/${workspace.slug}`}
                 target="_blank"
                 rel="noreferrer"
+                title={t.tv}
               >
                 <Monitor aria-hidden="true" />
-                {t.tv}
+                <span className={linkText}>{t.tv}</span>
               </a>
               <a
-                className="btn btn-quiet"
+                className={iconLink}
                 href={`/join/${workspace.slug}`}
                 target="_blank"
                 rel="noreferrer"
+                title={t.visitorLink}
               >
                 <QrCode aria-hidden="true" />
-                {t.visitorLink}
+                <span className={linkText}>{t.visitorLink}</span>
               </a>
+              <a
+                className={iconLink}
+                href={`/print/${workspace.slug}/qr`}
+                target="_blank"
+                rel="noreferrer"
+                title={t.printQr}
+              >
+                <Printer aria-hidden="true" />
+                <span className={linkText}>{t.printQr}</span>
+              </a>
+              {workspace.role === "OWNER" && (
+                <Link className={iconLink} href="/admin" title={t.admin}>
+                  <Settings2 aria-hidden="true" />
+                  <span className={linkText}>{t.admin}</span>
+                </Link>
+              )}
+            </nav>
+            <LanguageSwitch />
+            <form action="/api/auth/logout" method="post">
+              <button
+                type="submit"
+                className={`${iconLink} whitespace-nowrap`}
+                title={t.logout}
+              >
+                <LogOut aria-hidden="true" />
+                <span className={linkText}>{t.logout}</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </header>
+
+      <main
+        id="main"
+        className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-3 lg:px-6 lg:py-4"
+      >
+        {workspace.demo && demoNotice && (
+          <div className="flex justify-center">
+            <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 py-0.5 ps-3.5 pe-1 text-xs text-indigo-950 shadow-[0_1px_2px_rgba(79,70,229,0.08)]">
+              <span
+                className="live-dot !size-1.5 !bg-indigo-500"
+                aria-hidden="true"
+              />
+              <strong>{t.liveDemo}</strong>
+              <span className="hidden min-w-0 truncate sm:inline">
+                {t.demoDetail}
+              </span>
+              <button
+                type="button"
+                className="btn btn-quiet min-h-7 rounded-full px-1.5"
+                aria-label={t.dismiss}
+                onClick={() => setDemoNotice(false)}
+              >
+                <X aria-hidden="true" />
+              </button>
             </div>
           </div>
         )}
-        <div className="mb-6">
-          <h1 className="page-heading">{t.desk}</h1>
-          <p className="mt-2 text-sm text-muted">{t.deskDetail}</p>
-        </div>
-        <div className="mb-4 space-y-2 empty:hidden">
+        <div className="space-y-2 empty:hidden">
           {!online && <Notice title={t.offline}>{t.offlineDetail}</Notice>}
           {online && link === "reconnecting" && (
             <Notice title={t.reconnecting}>{t.reconnectDetail}</Notice>
@@ -403,103 +430,146 @@ function Desk({ workspace }: { workspace: Workspace }) {
           )}
         </div>
         {!data && !error && (
-          <p role="status" className="panel p-6 text-sm text-muted">
+          <p role="status" className="surface p-6 text-sm text-muted">
             {t.loadingQueue}
           </p>
         )}
         {data && !counter && (
-          <div className="panel p-6">
+          <div className="surface p-6">
             <h2 className="section-heading">{t.noCounters}</h2>
             <p className="mt-1 text-sm text-muted">{t.noCountersDetail}</p>
           </div>
         )}
         {counter && (
-          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.24fr)_minmax(0,1fr)] lg:gap-6">
+          <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
             <section
-              className="panel"
+              className="flex min-h-0 flex-col gap-3"
               aria-labelledby="active-title"
               aria-busy={!current}
             >
-              <div className="eyeline flex flex-wrap items-center justify-between gap-3 px-5 py-4.5 sm:px-6">
-                <div className="flex items-center gap-2.5">
-                  <Ticket className="size-4.5 text-muted" aria-hidden="true" />
-                  <h2 id="active-title" className="section-heading">
-                    {t.active}
-                  </h2>
-                </div>
-                {active && (
-                  <span className="status-pill status-open">
-                    {t.activeStatus}
-                  </span>
-                )}
-              </div>
-              <div className="p-4 sm:p-6">
+              <div className="relative flex min-h-60 flex-1 flex-col justify-between gap-4 overflow-hidden rounded-2xl bg-obsidian p-5 text-white shadow-[0_1px_2px_rgba(11,17,32,0.2),0_20px_44px_-16px_rgba(11,17,32,0.55),inset_0_1px_0_rgba(255,255,255,0.07)] sm:p-6">
                 <div
-                  className={`grid min-h-52 content-center gap-4 rounded-xl border px-5 py-5 sm:min-h-60 sm:px-7 ${active ? "border-emerald-100 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}
-                >
-                  {active ? (
-                    <>
-                      <p
-                        aria-live="polite"
-                        className="break-all text-[clamp(3.1rem,8vw,6rem)] leading-none font-extrabold -tracking-[.04em] text-emerald-900 tabular-nums"
-                        translate="no"
-                      >
-                        {active.tokenNumber}
-                      </p>
-                      <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-emerald-900">
-                        <Clock3 className="size-4" aria-hidden="true" />
-                        {t.elapsed}
-                        <span className="rounded-md bg-white/80 px-2 py-1 font-extrabold tabular-nums">
-                          {formatElapsed(
-                            elapsed(
-                              now,
-                              active.firstCalledAt ??
-                                active.calledAt ??
-                                active.issuedAt,
-                            ),
-                            language,
-                          )}
-                        </span>
-                      </p>
-                    </>
-                  ) : (
-                    <div className="space-y-2">
-                      <span className="grid size-10 place-items-center rounded-lg border border-line bg-white text-muted">
-                        <Ticket className="size-5" aria-hidden="true" />
-                      </span>
-                      <p className="text-xl font-extrabold tracking-tight">
-                        {t.noActive}
-                      </p>
-                      <p className="text-sm text-muted">{t.ready}</p>
-                    </div>
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute inset-0 transition-opacity duration-700 ${active ? "opacity-100" : "opacity-40"}`}
+                  style={{
+                    background:
+                      "radial-gradient(60% 70% at 50% 45%, rgba(16,185,129,0.2), transparent 70%), radial-gradient(40% 50% at 100% 100%, rgba(99,102,241,0.18), transparent 70%)",
+                  }}
+                />
+                <div className="relative flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className={
+                        active ? "live-dot" : "size-2 rounded-full bg-slate-600"
+                      }
+                      aria-hidden="true"
+                    />
+                    <h2
+                      id="active-title"
+                      className="text-sm font-extrabold tracking-wide text-slate-200"
+                    >
+                      {t.active}
+                    </h2>
+                  </div>
+                  {active && (
+                    <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-xs font-extrabold text-emerald-200 ring-1 ring-emerald-300/25 ring-inset">
+                      {t.activeStatus}
+                    </span>
                   )}
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-muted">{t.next}</p>
-                    <p className="mt-1 break-all text-base font-extrabold tabular-nums">
+                <div className="relative grid flex-1 place-items-center overflow-hidden py-1">
+                  <AnimatePresence initial={false} mode="wait">
+                    {active ? (
+                      <motion.p
+                        key={active.id + active.tokenNumber}
+                        aria-live="polite"
+                        initial={{ opacity: 0, y: 32, scale: 0.94 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{
+                          opacity: 0,
+                          y: -32,
+                          scale: 0.94,
+                          transition: { duration: 0.1 },
+                        }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 380,
+                          damping: 26,
+                        }}
+                        className="break-all text-center text-[clamp(4rem,min(11vw,22dvh),8.5rem)] leading-none font-extrabold -tracking-[.04em] text-emerald-300 tabular-nums drop-shadow-[0_0_28px_rgba(52,211,153,0.45)]"
+                        translate="no"
+                      >
+                        {active.tokenNumber}
+                      </motion.p>
+                    ) : (
+                      <motion.div
+                        key="idle"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="grid justify-items-center gap-2 text-center"
+                      >
+                        <span className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/5 text-slate-300">
+                          <Ticket className="size-5" aria-hidden="true" />
+                        </span>
+                        <p className="text-xl font-extrabold tracking-tight">
+                          {t.noActive}
+                        </p>
+                        <p className="text-sm text-slate-300">{t.ready}</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="relative flex flex-wrap items-end justify-between gap-3">
+                  {active ? (
+                    <p className="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                      <Clock3 className="size-4" aria-hidden="true" />
+                      {t.elapsed}
+                      <span className="rounded-md bg-white/10 px-2 py-1 font-extrabold text-white tabular-nums">
+                        {formatElapsed(
+                          elapsed(
+                            now,
+                            active.firstCalledAt ??
+                              active.calledAt ??
+                              active.issuedAt,
+                          ),
+                          language,
+                        )}
+                      </span>
+                    </p>
+                  ) : (
+                    <span />
+                  )}
+                  <div className="text-end">
+                    <p className="text-xs font-bold text-slate-300">{t.next}</p>
+                    <p className="mt-0.5 break-all text-base font-extrabold tabular-nums">
                       {next?.tokenNumber ?? t.noneWaiting}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary min-h-12 flex-1 sm:flex-none"
-                    disabled={!canAct || !next}
-                    aria-keyshortcuts="Space Enter"
-                    onClick={() => void perform("CALL_NEXT")}
-                  >
-                    <ArrowRight aria-hidden="true" />
-                    {t.call}
-                    <Hotkey>Space</Hotkey>
-                    <CornerDownLeft
-                      className="hidden sm:block"
-                      aria-hidden="true"
-                    />
-                  </button>
                 </div>
+              </div>
 
-                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-4">
+              <div className="surface shrink-0 p-3">
+                <motion.button
+                  type="button"
+                  className="btn btn-primary min-h-14 w-full from-indigo-500 to-indigo-600 text-base"
+                  disabled={!canAct || !next}
+                  aria-keyshortcuts="Space Enter"
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                  onClick={() => void perform("CALL_NEXT")}
+                >
+                  <ArrowRight aria-hidden="true" />
+                  {t.call}
+                  <Hotkey>Space</Hotkey>
+                  <CornerDownLeft
+                    className="hidden sm:block"
+                    aria-hidden="true"
+                  />
+                </motion.button>
+                <div className="mt-2 grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     className="btn min-w-0 px-2"
@@ -534,34 +604,34 @@ function Desk({ workspace }: { workspace: Workspace }) {
                     <Hotkey>S</Hotkey>
                   </button>
                 </div>
-              </div>
-              <div className="flex flex-wrap gap-2 rounded-b-xl border-t border-line bg-slate-50/65 px-4 py-3 sm:px-6">
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={!canIssue}
-                  aria-keyshortcuts="N"
-                  onClick={() => void perform("ISSUE_WALKIN")}
-                >
-                  <Plus aria-hidden="true" />
-                  {t.issue}
-                  <Hotkey>N</Hotkey>
-                </button>
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={!canAct}
-                  aria-keyshortcuts="P"
-                  onClick={() => void perform("TOGGLE_PAUSE")}
-                >
-                  {counter.status === "OPEN" ? (
-                    <Pause aria-hidden="true" />
-                  ) : (
-                    <Play aria-hidden="true" />
-                  )}
-                  {counter.status === "OPEN" ? t.pause : t.resume}
-                  <Hotkey>P</Hotkey>
-                </button>
+                <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-100 pt-2">
+                  <button
+                    type="button"
+                    className="btn btn-quiet min-h-9"
+                    disabled={!canIssue}
+                    aria-keyshortcuts="N"
+                    onClick={() => void perform("ISSUE_WALKIN")}
+                  >
+                    <Plus aria-hidden="true" />
+                    {t.issue}
+                    <Hotkey>N</Hotkey>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-quiet min-h-9"
+                    disabled={!canAct}
+                    aria-keyshortcuts="P"
+                    onClick={() => void perform("TOGGLE_PAUSE")}
+                  >
+                    {counter.status === "OPEN" ? (
+                      <Pause aria-hidden="true" />
+                    ) : (
+                      <Play aria-hidden="true" />
+                    )}
+                    {counter.status === "OPEN" ? t.pause : t.resume}
+                    <Hotkey>P</Hotkey>
+                  </button>
+                </div>
               </div>
             </section>
             <WaitingQueue
@@ -574,7 +644,7 @@ function Desk({ workspace }: { workspace: Workspace }) {
         )}
       </main>
       <Toast toast={toast} />
-    </>
+    </div>
   );
 }
 

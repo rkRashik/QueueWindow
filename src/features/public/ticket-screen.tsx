@@ -112,78 +112,138 @@ function Ticket({ slug, ticketId }: { slug: string; ticketId: string }) {
       {ticket && (
         <section
           aria-labelledby="visitor-ticket-title"
-          className={`visitor-ticket visitor-card ${called ? "visitor-called" : status === "SKIPPED" ? "visitor-skipped" : ""}`}
+          className={`visitor-ticket ${called ? "visitor-called" : status === "SKIPPED" ? "visitor-skipped" : ""}`}
         >
-          <h1 id="visitor-ticket-title" className="text-base font-extrabold">
-            {t.ticket}
-          </h1>
-          <p className="visitor-token tabular-nums" translate="no">
-            {ticket.tokenNumber}
-          </p>
-          <p className="break-words text-lg font-extrabold">
-            {ticket.counterName}
-          </p>
-          <div className="ticket-status" role="status">
-            {waiting && <p className="text-base font-extrabold">{t.wait}</p>}
-            {called && (
+          <div className="pass-top">
+            <h1 id="visitor-ticket-title" className="text-base font-extrabold">
+              {t.ticket}
+            </h1>
+            <div className="pass-ring">
+              {called && !reduce && (
+                // Celebration: expanding emerald rings while the ticket is called.
+                <>
+                  {[0, 0.6].map((delay) => (
+                    <motion.span
+                      key={delay}
+                      aria-hidden="true"
+                      className="absolute inset-3 rounded-full border-2 border-emerald-500"
+                      initial={{ opacity: 0.7, scale: 0.9 }}
+                      animate={{ opacity: 0, scale: 1.3 }}
+                      transition={{
+                        duration: 1.6,
+                        delay,
+                        ease: "easeOut",
+                        repeat: Infinity,
+                      }}
+                    />
+                  ))}
+                </>
+              )}
+              {(waiting || called) && (
+                <svg viewBox="0 0 100 100" aria-hidden="true">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="46"
+                    fill="none"
+                    strokeWidth="4"
+                    className={
+                      called ? "stroke-emerald-200" : "stroke-indigo-100"
+                    }
+                  />
+                  <motion.circle
+                    cx="50"
+                    cy="50"
+                    r="46"
+                    fill="none"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    className={
+                      called ? "stroke-emerald-600" : "stroke-indigo-700"
+                    }
+                    initial={false}
+                    animate={{ pathLength: called ? 1 : percent / 100 }}
+                    transition={{ duration: reduce ? 0 : 0.7, ease: "easeOut" }}
+                  />
+                </svg>
+              )}
+              <motion.p
+                key={called ? "called" : "idle"}
+                initial={false}
+                animate={
+                  called && !reduce ? { scale: [1, 1.12, 1] } : { scale: 1 }
+                }
+                transition={{ duration: 0.6 }}
+                className="visitor-token relative tabular-nums"
+                translate="no"
+              >
+                {ticket.tokenNumber}
+              </motion.p>
+            </div>
+            <p className="break-words text-lg font-extrabold">
+              {ticket.counterName}
+            </p>
+          </div>
+          <div className="pass-perf" aria-hidden="true" />
+          <div className="pass-bottom">
+            <div className="ticket-status" role="status">
+              {waiting && <p className="text-base font-extrabold">{t.wait}</p>}
+              {called && (
+                <>
+                  <p lang="bn" className="text-xl font-extrabold">
+                    আপনার পালা! কাউন্টারে আসুন
+                  </p>
+                  <p lang="en" className="mt-1 text-lg font-extrabold">
+                    It’s your turn!
+                  </p>
+                  <p lang="en" className="mt-1">
+                    Please go to your counter.
+                  </p>
+                </>
+              )}
+              {status === "SERVED" && (
+                <>
+                  <Check className="mx-auto mb-2 size-6" aria-hidden="true" />
+                  <p className="text-xl font-extrabold">{t.served}</p>
+                  <p className="mt-1">{t.servedDetail}</p>
+                </>
+              )}
+              {status === "SKIPPED" && (
+                <>
+                  <Headset className="mx-auto mb-2 size-6" aria-hidden="true" />
+                  <p className="text-xl font-extrabold">{t.skipped}</p>
+                  <p className="mt-1">{t.skippedDetail}</p>
+                </>
+              )}
+            </div>
+            {waiting && (
               <>
-                <p lang="bn" className="text-xl font-extrabold">
-                  আপনার পালা! কাউন্টারে আসুন
-                </p>
-                <p lang="en" className="mt-1 text-lg font-extrabold">
-                  It’s your turn!
-                </p>
-                <p lang="en" className="mt-1">
-                  Please go to your counter.
-                </p>
-              </>
-            )}
-            {status === "SERVED" && (
-              <>
-                <Check className="mx-auto mb-2 size-6" aria-hidden="true" />
-                <p className="text-xl font-extrabold">{t.served}</p>
-                <p className="mt-1">{t.servedDetail}</p>
-              </>
-            )}
-            {status === "SKIPPED" && (
-              <>
-                <Headset className="mx-auto mb-2 size-6" aria-hidden="true" />
-                <p className="text-xl font-extrabold">{t.skipped}</p>
-                <p className="mt-1">{t.skippedDetail}</p>
+                <dl className="ticket-metrics">
+                  <div>
+                    <dt>{t.people}</dt>
+                    <dd className="tabular-nums">
+                      {formatNumber(ticket.peopleAhead, language)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{t.estimate}</dt>
+                    <dd className="tabular-nums">
+                      {formatNumber(ticket.estimatedWaitMinutes, language)}{" "}
+                      <span>{t.minutes}</span>
+                    </dd>
+                  </div>
+                </dl>
+                <div
+                  className="sr-only"
+                  role="progressbar"
+                  aria-label={t.progress}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={percent}
+                />
               </>
             )}
           </div>
-          {waiting && (
-            <>
-              <dl className="ticket-metrics">
-                <div>
-                  <dt>{t.people}</dt>
-                  <dd className="tabular-nums">
-                    {formatNumber(ticket.peopleAhead, language)}
-                  </dd>
-                </div>
-                <div>
-                  <dt>{t.estimate}</dt>
-                  <dd className="tabular-nums">
-                    {formatNumber(ticket.estimatedWaitMinutes, language)}{" "}
-                    <span>{t.minutes}</span>
-                  </dd>
-                </div>
-              </dl>
-              <div
-                className="ticket-progress"
-                role="progressbar"
-                aria-label={t.progress}
-                aria-valuenow={percent}
-              >
-                <motion.div
-                  initial={false}
-                  animate={{ width: `${percent}%` }}
-                  transition={{ duration: reduce ? 0 : 0.4 }}
-                />
-              </div>
-            </>
-          )}
         </section>
       )}
       {waiting && (

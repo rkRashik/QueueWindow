@@ -37,7 +37,7 @@ export function Wordmark() {
       className="inline-flex w-fit shrink-0 items-center gap-2.5 font-extrabold tracking-tight"
       translate="no"
     >
-      <span className="grid size-8 place-items-center rounded-lg bg-brand text-white">
+      <span className="grid size-8 place-items-center rounded-lg bg-linear-to-b from-indigo-500 to-indigo-700 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_6px_-1px_rgba(79,70,229,0.5)]">
         <Layers2 aria-hidden="true" className="size-[18px]" strokeWidth={2.4} />
       </span>
       QueueWindow
@@ -56,7 +56,7 @@ export function WorkspaceHeader({
 }) {
   const { t } = useLocale();
   return (
-    <header className="eyeline bg-white">
+    <header className="eyeline sticky top-0 z-20 bg-white/85 backdrop-blur-xl">
       <div className="shell-width flex min-h-17 flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
           <Wordmark />

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Hind_Siliguri, Plus_Jakarta_Sans } from "next/font/google";
+import { MotionProvider } from "./motion-provider";
 import "./globals.css";
 
 const latin = Plus_Jakarta_Sans({
@@ -31,7 +32,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         >
           Skip to content
         </a>
-        {children}
+        <MotionProvider>{children}</MotionProvider>
       </body>
     </html>
   );

@@ -7,6 +7,9 @@
 }
 @theme {
   --color-paper: #f8fafc;
+  --color-canvas: #f4f6fa;
+  --color-obsidian: #0b1120;
+  --color-void: #050811;
   --color-ink: #0f172a;
   --color-muted: #52617a;
   --color-line: #e2e8f0;
@@ -43,7 +46,10 @@
     @apply mx-auto w-full max-w-[1440px] px-4 sm:px-7 lg:px-10;
   }
   .panel {
-    @apply min-w-0 rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_#0f172a06];
+    @apply min-w-0 rounded-xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-4px_rgba(15,23,42,0.06)];
+  }
+  .surface {
+    @apply min-w-0 rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-4px_rgba(15,23,42,0.06)];
   }
   .page-heading {
     @apply text-[1.85rem] leading-tight font-extrabold -tracking-[.035em] sm:text-[2.15rem];
@@ -56,13 +62,16 @@
   }
   .btn {
     @apply inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-line bg-white px-3.5 py-2 text-center text-sm leading-snug font-bold text-ink;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
     transition:
       background-color 130ms ease,
       border-color 130ms ease,
+      box-shadow 130ms ease,
       transform 120ms ease;
   }
   .btn:hover {
     @apply border-slate-300 bg-slate-50;
+    box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.08);
   }
   .btn:active {
     transform: scale(0.98);
@@ -76,16 +85,26 @@
     @apply size-4 shrink-0;
   }
   .btn-primary {
-    @apply border-brand bg-brand text-white;
+    @apply border-indigo-700 bg-linear-to-b from-indigo-600 to-indigo-700 text-white;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 1px 2px rgba(49, 46, 129, 0.35),
+      0 6px 16px -6px rgba(79, 70, 229, 0.55);
   }
   .btn-primary:hover {
-    @apply border-brand-dark bg-brand-dark;
+    @apply border-indigo-800 from-indigo-500 to-indigo-700;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.25),
+      0 1px 2px rgba(49, 46, 129, 0.4),
+      0 10px 22px -8px rgba(79, 70, 229, 0.6);
   }
   .btn-quiet {
     @apply border-transparent bg-transparent text-muted;
+    box-shadow: none;
   }
   .btn-quiet:hover {
     @apply border-transparent bg-slate-100 text-ink;
+    box-shadow: none;
   }
   .btn-danger {
     @apply border-rose-200 bg-white text-rose-700;
@@ -123,22 +142,22 @@
     @apply size-1.5 shrink-0 rounded-full bg-current;
   }
   .status-open {
-    @apply bg-emerald-50 text-emerald-800;
+    @apply bg-emerald-50 text-emerald-800 ring-1 ring-emerald-600/15 ring-inset;
   }
   .status-open::before {
     background-color: var(--color-serving);
   }
   .status-paused {
-    @apply bg-amber-50 text-amber-900;
+    @apply bg-amber-50 text-amber-900 ring-1 ring-amber-600/20 ring-inset;
   }
   .status-paused::before {
     background-color: var(--color-hold);
   }
   .hotkey {
-    @apply hidden shrink-0 rounded border border-slate-200 bg-white px-1.5 py-0.5 font-sans text-[.65rem] font-bold leading-none text-muted sm:inline-block;
+    @apply hidden shrink-0 rounded-md border border-slate-200 border-b-slate-300 bg-slate-50 px-1.5 py-0.5 font-sans text-[.65rem] font-bold leading-none text-muted shadow-[0_1px_0_rgba(15,23,42,0.08)] sm:inline-block;
   }
   .btn-primary .hotkey {
-    @apply border-white/40 bg-white/15 text-white;
+    @apply border-white/30 bg-white/15 text-white shadow-[0_1px_0_rgba(0,0,0,0.2)];
   }
   .toast {
     @apply flex max-w-[min(25rem,calc(100vw-2rem))] items-center gap-2.5 rounded-xl border border-line bg-white px-3.5 py-2 text-sm font-bold shadow-[0_8px_24px_#0f172a13];
@@ -152,14 +171,28 @@
   .data-table td {
     @apply border-b border-slate-100 px-4 py-2.5;
   }
+  .data-table tbody tr {
+    transition: background-color 120ms ease;
+  }
+  .data-table tbody tr:hover td {
+    @apply bg-indigo-50/40;
+  }
   .data-table tr:last-child td {
     @apply border-b-0;
   }
   .dialog {
     @apply fixed inset-0 m-auto max-h-[85dvh] w-[min(30rem,calc(100%-2rem))] overflow-y-auto rounded-2xl border border-line bg-white p-0 text-ink shadow-[0_24px_90px_#0f172a33];
+    animation: dialog-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
   .dialog::backdrop {
     background: #10182772;
+    backdrop-filter: blur(3px);
+  }
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
   }
 }
 
@@ -173,5 +206,10 @@
   }
   .btn:active {
     transform: none;
+  }
+  .live-dot::after,
+  .tv-aurora,
+  .tv-aurora::before {
+    animation: none !important;
   }
 }
