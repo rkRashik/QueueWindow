@@ -141,7 +141,7 @@ export function BrandingSection({
                     type="button"
                     aria-label={swatch}
                     aria-pressed={swatch === color.toUpperCase()}
-                    className={`grid size-10 place-items-center rounded-lg border ${swatch === color.toUpperCase() ? "border-brand bg-indigo-50" : "border-transparent hover:bg-slate-100"}`}
+                    className={`grid size-10 place-items-center rounded-lg border ${swatch === color.toUpperCase() ? "border-brand bg-teal-50" : "border-transparent hover:bg-slate-100"}`}
                     onClick={() => setColor(swatch)}
                   >
                     <span
@@ -215,7 +215,7 @@ export function BrandingSection({
             <dl className="divide-y divide-slate-100 px-5">
               <div className="flex flex-wrap items-center justify-between gap-2 py-4">
                 <dt className="text-sm font-bold text-muted">{t.plan}</dt>
-                <dd className="rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-extrabold text-indigo-800">
+                <dd className="rounded-md bg-teal-50 px-2.5 py-1 text-xs font-extrabold text-teal-800">
                   {branding.plan === "TRIAL" ? t.trial : branding.plan}
                 </dd>
               </div>

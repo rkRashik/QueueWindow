@@ -24,7 +24,7 @@ function subscribe(change: () => void) {
   };
 }
 
-export function usePublicFeed(slug: string, onSnapshot?: () => void) {
+export function usePublicFeed(slug: string, onSnapshot?: (snapshot: DisplayData) => void) {
   const [data, setData] = useState<DisplayData | null>(null);
   const [error, setError] = useState<number | null>(null);
   const [reconnecting, setReconnecting] = useState(false);
@@ -45,7 +45,7 @@ export function usePublicFeed(slug: string, onSnapshot?: () => void) {
         if (request.signal.aborted) return;
         setData(value);
         setError(null);
-        onSnapshot?.();
+        onSnapshot?.(value);
       },
       (failure: unknown) => {
         if (!request.signal.aborted)
@@ -73,7 +73,7 @@ export function usePublicFeed(slug: string, onSnapshot?: () => void) {
         setReconnecting(false);
         setData(value);
         setError(null);
-        onSnapshot?.();
+        onSnapshot?.(value);
       } catch {
         warn();
       }

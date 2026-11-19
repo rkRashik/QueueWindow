@@ -45,9 +45,8 @@ test("demo connects the staff desk, visitor ticket, and bilingual TV", async ({
     const guest = await visitor.newPage();
     await guest.goto("/join/demo-clinic");
     await expect(
-      guest.getByRole("button", { name: "বাংলা", exact: true }),
+      guest.getByRole("button", { name: "EN", exact: true }),
     ).toHaveAttribute("aria-pressed", "true");
-    await guest.getByRole("button", { name: "EN", exact: true }).click();
     await guest.route(
       "**/api/public/demo-clinic/join",
       async (route) => {
@@ -76,6 +75,7 @@ test("demo connects the staff desk, visitor ticket, and bilingual TV", async ({
     const tv = await visitor.newPage();
     await tv.setViewportSize({ width: 1280, height: 800 });
     await tv.goto("/display/demo-clinic");
+    await tv.getByRole("button", { name: "Both", exact: true }).click();
     await expect(
       tv.getByText("এখন ডাকছেন", { exact: true }).first(),
     ).toBeVisible();

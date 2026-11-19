@@ -55,6 +55,10 @@ export async function displaySnapshot(db: Database, slug: string) {
         sql<number>`(select count(*) from ${tickets} where ${scope} and ${tickets.status} = 'WAITING')`.mapWith(
           Number,
         ),
+      // Read-only display hint for visitors choosing a counter.
+      avgServiceSeconds: sql<
+        number | null
+      >`(select avg(${serviceSeconds})::float8 from ${tickets} where ${scope} and ${tickets.businessDate} = ${today} and ${tickets.status} = 'SERVED')`,
     })
     .from(organizations)
     .leftJoin(counters, eq(counters.orgId, organizations.id))
@@ -73,6 +77,7 @@ export async function displaySnapshot(db: Database, slug: string) {
               calledTicket: row.called,
               waitingTokens: row.waitingTokens ?? [],
               waitingCount: row.waitingCount,
+              avgServiceSeconds: row.avgServiceSeconds,
             },
           ]
         : [],

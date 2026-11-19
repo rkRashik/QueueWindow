@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Hind_Siliguri, Plus_Jakarta_Sans } from "next/font/google";
+import { Fraunces, Hind_Siliguri, Plus_Jakarta_Sans } from "next/font/google";
 import { MotionProvider } from "./motion-provider";
 import "./globals.css";
 
@@ -7,6 +7,11 @@ const latin = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-jakarta",
+});
+const display = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-fraunces",
 });
 const bengali = Hind_Siliguri({
   subsets: ["bengali"],
@@ -24,7 +29,7 @@ export const metadata: Metadata = {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${latin.variable} ${bengali.variable}`}>
+    <html lang="en" className={`${latin.variable} ${bengali.variable} ${display.variable}`}>
       <body className="min-h-dvh bg-paper text-ink antialiased">
         <a
           className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-white focus:p-3"

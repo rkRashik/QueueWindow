@@ -20,7 +20,11 @@ import {
 } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
 import type { analytics } from "@/features/queue/read-model";
+import { CounterBadge } from "@/components/counter-badge";
+import { getCounterTheme, sortCounters } from "@/lib/counter-theme";
 import { formatNumber } from "@/lib/i18n";
+import { formatWait } from "@/lib/time";
+import { EfficiencyPanel, LoadChart } from "./admin-charts";
 import { BrandingSection, type Branding } from "./branding";
 import { useResource } from "./admin-data";
 import { AdminHeading, ResourceNotice } from "./admin-ui";
@@ -91,7 +95,7 @@ function Kpi({
       <div className="flex items-center justify-between gap-2 text-sm font-bold text-muted">
         <h2>{label}</h2>
         <span
-          className={`grid size-8 place-items-center rounded-lg ring-1 ring-inset ${tone === "bg-indigo-400" ? "bg-indigo-50 text-indigo-700 ring-indigo-200/70" : tone === "bg-emerald-400" ? "bg-emerald-50 text-emerald-700 ring-emerald-200/70" : tone === "bg-amber-400" ? "bg-amber-50 text-amber-700 ring-amber-200/70" : "bg-sky-50 text-sky-700 ring-sky-200/70"}`}
+          className={`grid size-8 place-items-center rounded-lg ring-1 ring-inset ${tone === "bg-teal-400" ? "bg-teal-50 text-teal-700 ring-teal-200/70" : tone === "bg-emerald-400" ? "bg-emerald-50 text-emerald-700 ring-emerald-200/70" : tone === "bg-amber-400" ? "bg-amber-50 text-amber-700 ring-amber-200/70" : "bg-sky-50 text-sky-700 ring-sky-200/70"}`}
         >
           <Icon className="size-4 shrink-0" aria-hidden="true" />
         </span>
@@ -128,8 +132,8 @@ function Overview() {
     Awaited<ReturnType<typeof analytics>>
   >("/api/admin/analytics");
   const number = (value: number) => formatNumber(value, language);
-  const minutes = (value: number | null) =>
-    value === null ? "—" : `${number(value)} ${t.minutes}`;
+  const minutes = (value: number | null) => formatWait(value, language);
+  const rows = sortCounters(data?.counters ?? []);
 
   return (
     <>
@@ -142,7 +146,7 @@ function Overview() {
       {data && (
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Kpi index={0} label={t.issued} tone="bg-indigo-400" Icon={Ticket}>
+            <Kpi index={0} label={t.issued} tone="bg-teal-400" Icon={Ticket}>
               <p className="mt-4 text-3xl leading-none font-extrabold -tracking-[.04em] tabular-nums">
                 <CountUp value={data.totals.issued} format={number} />
               </p>
@@ -210,9 +214,27 @@ function Overview() {
               </dl>
             </Kpi>
           </div>
+          {data.totals.issued > 0 ? (
+            <div className="mt-5 grid gap-4 xl:grid-cols-5">
+              <LoadChart rows={rows} />
+              <div className="xl:col-span-2">
+                <EfficiencyPanel rows={rows} totals={data.totals} />
+              </div>
+            </div>
+          ) : (
+            <div className="surface mt-5 grid place-items-center gap-2 p-8 text-center">
+              <span className="grid size-12 place-items-center rounded-2xl bg-slate-100 text-slate-500">
+                <BarChart3 className="size-5" aria-hidden="true" />
+              </span>
+              <p className="font-extrabold">{t.noTicketsToday}</p>
+              <p className="max-w-[40ch] text-sm text-muted">
+                {t.noTicketsTodayDetail}
+              </p>
+            </div>
+          )}
           <section
             aria-labelledby="performance"
-            className="surface mt-5 overflow-hidden"
+            className="surface mt-4 overflow-hidden"
           >
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-4 sm:px-5">
               <h2 id="performance" className="section-heading">
@@ -245,9 +267,19 @@ function Overview() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.counters.map((counter) => (
+                  {rows.map((counter) => (
                     <tr key={counter.counterId}>
-                      <td className="font-extrabold">{counter.name}</td>
+                      <td
+                        className="font-extrabold"
+                        style={{
+                          boxShadow: `inset 3px 0 0 ${getCounterTheme(counter.prefix).hue}`,
+                        }}
+                      >
+                        <span className="flex items-center gap-2">
+                          <CounterBadge prefix={counter.prefix} size="sm" />
+                          {counter.name}
+                        </span>
+                      </td>
                       <td>{number(counter.issued)}</td>
                       <td>
                         <Pill tone="emerald">{number(counter.served)}</Pill>
@@ -320,12 +352,12 @@ function Admin({
               key={id}
               href={id === "overview" ? "/admin" : `/admin?section=${id}`}
               aria-current={id === section ? "page" : undefined}
-              className={`relative flex min-h-11 min-w-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-bold ${id === section ? "text-indigo-800" : "text-muted hover:bg-slate-100 hover:text-ink"}`}
+              className={`relative flex min-h-11 min-w-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-bold ${id === section ? "text-teal-800" : "text-muted hover:bg-slate-100 hover:text-ink"}`}
             >
               {id === section && (
                 <motion.span
                   layoutId={navPill}
-                  className="absolute inset-0 rounded-lg bg-indigo-50 shadow-[inset_0_0_0_1px_rgba(99,102,241,0.18),0_1px_2px_rgba(79,70,229,0.08)]"
+                  className="absolute inset-0 rounded-lg bg-teal-50 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.18),0_1px_2px_rgba(15,118,110,0.08)]"
                   transition={{ type: "spring", stiffness: 500, damping: 36 }}
                 />
               )}

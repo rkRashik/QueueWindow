@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Layers2, WifiOff } from "lucide-react";
+import { WifiOff } from "lucide-react";
+import { QueueMark } from "@/components/brand";
 import { useState, type ReactNode } from "react";
 import { PublicLanguage, usePublicLocale } from "./language";
 import type { Venue } from "./live";
@@ -27,14 +28,14 @@ export function VenueMark({
     />
   ) : (
     <span
-      className="venue-mark grid place-items-center bg-slate-200 text-slate-950"
+      className="venue-mark grid place-items-center border-0 bg-transparent"
       style={
         primaryColor && /^#[0-9A-Fa-f]{6}$/.test(primaryColor)
-          ? { borderColor: primaryColor }
+          ? { outline: `2px solid ${primaryColor}`, outlineOffset: 2 }
           : undefined
       }
     >
-      <Layers2 className="size-6" aria-hidden="true" />
+      <QueueMark size={44} />
     </span>
   );
 }

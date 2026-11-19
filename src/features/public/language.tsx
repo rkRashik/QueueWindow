@@ -1,14 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  createContext,
-  useContext,
-  useId,
-  useSyncExternalStore,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useId, type ReactNode } from "react";
 import type { Language } from "@/lib/i18n";
+import { useStoredChoice } from "@/lib/stored";
 
 const en = {
   language: "Language",
@@ -55,6 +50,19 @@ const en = {
   resets: "This screen clears automatically after 30 seconds.",
   receiptTitle: "Your queue receipt",
   kiosk: "Reception kiosk",
+  nowServing: "Now serving",
+  upNext: "Up next",
+  live: "Live",
+  nowCalling: "Now calling",
+  waitingWord: "waiting",
+  noWait: "No wait",
+  stepJoined: "Joined",
+  stepAlmost: "Almost ready",
+  stepTurn: "Your turn",
+  nothingYet: "Waiting for the first call",
+  queueClear: "No one waiting",
+  ahead: "ahead of you",
+  soundOn: "Alerts on",
 };
 
 const bn: typeof en = {
@@ -102,72 +110,98 @@ const bn: typeof en = {
   resets: "৩০ সেকেন্ড পর এই স্ক্রিন নিজে থেকে পরিষ্কার হবে।",
   receiptTitle: "আপনার টিকিটের রসিদ",
   kiosk: "রিসেপশন কিয়স্ক",
+  nowServing: "এখন ডাকছেন",
+  upNext: "পরবর্তী",
+  live: "লাইভ",
+  nowCalling: "এখন ডাকা হচ্ছে",
+  waitingWord: "অপেক্ষায়",
+  noWait: "অপেক্ষা নেই",
+  stepJoined: "যুক্ত হয়েছেন",
+  stepAlmost: "প্রায় প্রস্তুত",
+  stepTurn: "আপনার পালা",
+  nothingYet: "প্রথম ডাকের অপেক্ষায়",
+  queueClear: "কেউ অপেক্ষায় নেই",
+  ahead: "আপনার আগে",
+  soundOn: "অ্যালার্ট চালু",
 };
 
 const words = { bn, en };
-const key = "qw-visitor-language";
-const Locale = createContext<Language>("bn");
-let fallback: Language = "bn";
+export type PublicMode = "en" | "bn" | "both";
+const modes = ["en", "bn", "both"] as const;
+const storageKey = "qw-visitor-language";
 
-function subscribe(change: () => void) {
-  window.addEventListener(key, change);
-  window.addEventListener("storage", change);
-  return () => {
-    window.removeEventListener(key, change);
-    window.removeEventListener("storage", change);
-  };
-}
-
-function read(): Language {
-  try {
-    return localStorage.getItem(key) === "en" ? "en" : "bn";
-  } catch {
-    return fallback;
-  }
-}
-
-function choose(language: Language) {
-  fallback = language;
-  try {
-    localStorage.setItem(key, language);
-  } catch {
-    /* Continue with the current session. */
-  }
-  window.dispatchEvent(new Event(key));
-}
+type Locale = {
+  mode: PublicMode;
+  setMode: (mode: PublicMode) => void;
+};
+const LocaleContext = createContext<Locale>({ mode: "en", setMode: () => {} });
 
 export function PublicLocale({ children }: { children: ReactNode }) {
-  const language = useSyncExternalStore<Language>(subscribe, read, () => "bn");
-  return <Locale.Provider value={language}>{children}</Locale.Provider>;
+  const [mode, setMode] = useStoredChoice<PublicMode>(storageKey, "en", modes);
+  return (
+    <LocaleContext.Provider value={{ mode, setMode }}>
+      {children}
+    </LocaleContext.Provider>
+  );
 }
 
 export function usePublicLocale() {
-  const language = useContext(Locale);
-  return { language, t: words[language] };
+  const { mode, setMode } = useContext(LocaleContext);
+  // `language` drives numerals, aria-labels and plain strings; "both" reads English first.
+  const language: Language = mode === "bn" ? "bn" : "en";
+  return { mode, setMode, language, t: words[language] };
 }
 
-export function PublicLanguage() {
-  const { language, t } = usePublicLocale();
+/** Renders one language, or both stacked when the "Both" mode is chosen. */
+export function Dual({ en: english, bn: bangla }: { en: ReactNode; bn: ReactNode }) {
+  const { mode } = usePublicLocale();
+  if (mode === "en") return <span lang="en">{english}</span>;
+  if (mode === "bn") return <span lang="bn">{bangla}</span>;
+  return (
+    <span className="dual">
+      <span lang="en">{english}</span>
+      <span lang="bn" className="dual-sub">
+        {bangla}
+      </span>
+    </span>
+  );
+}
+
+export function Tx({ k }: { k: keyof typeof en }) {
+  return <Dual en={en[k]} bn={bn[k]} />;
+}
+
+export function PublicLanguage({
+  variant = "light",
+}: {
+  variant?: "light" | "glass";
+}) {
+  const { mode, setMode, t } = usePublicLocale();
   const pill = useId();
   return (
-    <div className="visitor-language" role="group" aria-label={t.language}>
+    <div
+      className={`visitor-language ${variant === "glass" ? "visitor-language-glass" : ""}`}
+      role="group"
+      aria-label={t.language}
+    >
       {(
         [
-          ["bn", "বাংলা"],
           ["en", "EN"],
+          ["bn", "বাংলা"],
+          ["both", "Both"],
         ] as const
       ).map(([code, label]) => (
         <button
           key={code}
           type="button"
-          lang={code}
-          aria-pressed={code === language}
-          onClick={() => choose(code)}
+          lang={code === "bn" ? "bn" : "en"}
+          aria-pressed={code === mode}
+          onClick={() => setMode(code)}
         >
-          {code === language && (
+          {code === mode && (
             <motion.span
               layoutId={pill}
-              className="absolute inset-0 rounded-full bg-slate-900"
+              className="visitor-language-pill absolute inset-0 rounded-full"
               transition={{ type: "spring", stiffness: 500, damping: 36 }}
             />
           )}

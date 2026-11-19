@@ -36,7 +36,7 @@ export function AccessPage({ mode }: { mode: "login" | "signup" }) {
             aria-hidden="true"
             className="mt-9 grid max-w-44 grid-cols-[2fr_1fr_1fr] gap-2"
           >
-            <span className="h-1 rounded-full bg-indigo-300" />
+            <span className="h-1 rounded-full bg-teal-300" />
             <span className="h-1 rounded-full bg-slate-600" />
             <span className="h-1 rounded-full bg-slate-700" />
           </div>
@@ -44,7 +44,7 @@ export function AccessPage({ mode }: { mode: "login" | "signup" }) {
         {signup && (
           <p className="hidden items-center gap-2 text-sm font-semibold text-slate-300 md:flex">
             <CircleCheck
-              className="size-4 text-indigo-200"
+              className="size-4 text-teal-200"
               aria-hidden="true"
             />
             14-day trial

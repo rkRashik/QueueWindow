@@ -57,6 +57,7 @@ export async function analytics(db: Database, orgId: string) {
     .select({
       counterId: counters.id,
       name: counters.name,
+      prefix: counters.prefix,
       ...aggregateFields,
     })
     .from(counters)
@@ -91,6 +92,7 @@ export async function analytics(db: Database, orgId: string) {
     counters: rows.map((row) => ({
       counterId: row.counterId,
       name: row.name,
+      prefix: row.prefix,
       ...stats(row),
     })),
   };

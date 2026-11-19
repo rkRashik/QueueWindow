@@ -1,6 +1,11 @@
 "use client";
 
-import { motion, type HTMLMotionProps } from "framer-motion";
+import {
+  motion,
+  useScroll,
+  useSpring,
+  type HTMLMotionProps,
+} from "framer-motion";
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 
@@ -118,5 +123,18 @@ export function LandingNav() {
         Sign up
       </Link>
     </nav>
+  );
+}
+
+/** Hairline reading-progress bar pinned under the sticky header. */
+export function ScrollProgress() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 140, damping: 28 });
+  return (
+    <motion.div
+      aria-hidden="true"
+      className="absolute inset-x-0 bottom-0 h-0.5 origin-left bg-teal-600"
+      style={{ scaleX }}
+    />
   );
 }

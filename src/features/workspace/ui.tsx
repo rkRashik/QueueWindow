@@ -7,7 +7,6 @@ import {
   Check,
   CircleCheck,
   Clipboard,
-  Layers2,
   LogOut,
   X,
 } from "lucide-react";
@@ -30,20 +29,8 @@ export type Workspace = {
   expiresAt: string;
 };
 
-export function Wordmark() {
-  return (
-    <Link
-      href="/"
-      className="inline-flex w-fit shrink-0 items-center gap-2.5 font-extrabold tracking-tight"
-      translate="no"
-    >
-      <span className="grid size-8 place-items-center rounded-lg bg-linear-to-b from-indigo-500 to-indigo-700 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_6px_-1px_rgba(79,70,229,0.5)]">
-        <Layers2 aria-hidden="true" className="size-[18px]" strokeWidth={2.4} />
-      </span>
-      QueueWindow
-    </Link>
-  );
-}
+export { Wordmark } from "@/components/brand";
+import { Wordmark } from "@/components/brand";
 
 export function WorkspaceHeader({
   organization,

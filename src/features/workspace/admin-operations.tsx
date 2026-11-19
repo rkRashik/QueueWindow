@@ -2,6 +2,8 @@
 
 import { Pencil, Plus, Trash2, UserPlus } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { CounterBadge } from "@/components/counter-badge";
+import { getCounterTheme, sortCounters } from "@/lib/counter-theme";
 import { AdminHeading, ResourceNotice } from "./admin-ui";
 import { useMutation, useResource } from "./admin-data";
 import { api, jsonRequest } from "./client";
@@ -120,13 +122,18 @@ export function CountersSection({ notify }: { notify: Notify }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.counters.map((counter) => (
+                  {sortCounters(data.counters).map((counter) => (
                     <tr key={counter.id}>
-                      <td className="font-extrabold">{counter.name}</td>
+                      <td
+                        className="font-extrabold"
+                        style={{
+                          boxShadow: `inset 3px 0 0 ${getCounterTheme(counter.prefix).hue}`,
+                        }}
+                      >
+                        {counter.name}
+                      </td>
                       <td>
-                        <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-extrabold tabular-nums">
-                          {counter.prefix}
-                        </span>
+                        <CounterBadge prefix={counter.prefix} size="sm" />
                       </td>
                       <td>
                         <StatusPill status={counter.status} />
@@ -310,7 +317,7 @@ export function TeamSection({ notify }: { notify: Notify }) {
       {credentials && (
         <section
           aria-labelledby="login-details"
-          className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4"
+          className="mb-4 rounded-xl border border-teal-200 bg-teal-50 p-4"
         >
           <h2 id="login-details" className="section-heading">
             {t.loginDetails}

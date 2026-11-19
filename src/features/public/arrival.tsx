@@ -1,10 +1,15 @@
 "use client";
 
-import { ArrowRight, Printer, Ticket } from "lucide-react";
+import { ArrowRight, Clock3, Printer, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CounterBadge } from "@/components/counter-badge";
+import { estimatedWait } from "@/features/queue/rules";
 import { api, ApiError, jsonRequest } from "@/features/workspace/client";
-import { PublicLocale, usePublicLocale } from "./language";
+import { counterVars, getCounterTheme, sortCounters } from "@/lib/counter-theme";
+import { formatNumber } from "@/lib/i18n";
+import { formatWait } from "@/lib/time";
+import { Dual, PublicLocale, Tx, usePublicLocale } from "./language";
 import { usePublicFeed, type PublicCounter, type Venue } from "./live";
 import { QrCode } from "./qr";
 import { ConnectionNote, VisitorShell } from "./ui";
@@ -94,11 +99,8 @@ function KioskReceipt({
         <div className="receipt-qr">
           <QrCode value={track} label="Track this ticket QR code" />
         </div>
-        <p className="text-sm font-semibold" lang="bn">
-          মোবাইলে টিকিট অনুসরণ করতে স্ক্যান করুন।
-        </p>
-        <p className="mt-1 text-sm font-semibold" lang="en">
-          Scan to track your ticket on your phone.
+        <p className="text-sm font-semibold">
+          <Tx k="track" />
         </p>
       </section>
       <div className="no-print mt-5 space-y-3">
@@ -144,7 +146,7 @@ function Arrival({
   kioskOrigin?: string;
 }) {
   const router = useRouter();
-  const { t } = usePublicLocale();
+  const { t, language } = usePublicLocale();
   const { data, error, online, reconnecting, refresh } = usePublicFeed(slug);
   const [pending, setPending] = useState<string | null>(null);
   const [failure, setFailure] = useState<
@@ -209,8 +211,12 @@ function Arrival({
       ) : (
         <>
           <div className="mb-6">
-            <h1 className="visitor-heading">{t.choose}</h1>
-            <p className="mt-2 text-base leading-relaxed">{t.select}</p>
+            <h1 className="visitor-heading">
+              <Tx k="choose" />
+            </h1>
+            <p className="mt-2 text-base leading-relaxed text-slate-700">
+              <Tx k="select" />
+            </p>
           </div>
           {reconnecting && (
             <ConnectionNote>
@@ -250,46 +256,78 @@ function Arrival({
             </div>
           )}
           <ul className="grid gap-3">
-            {data?.counters.map((counter) => (
-              <li key={counter.id}>
-                <button
-                  type="button"
-                  disabled={
-                    !online || pending !== null || counter.status !== "OPEN"
-                  }
-                  aria-label={`${counter.name} · ${counter.status === "OPEN" ? t.open : t.paused}`}
-                  className="arrival-counter"
-                  onClick={() => void issue(counter)}
-                >
-                  <span className="arrival-icon">
-                    <Ticket className="size-5" aria-hidden="true" />
-                  </span>
-                  <span className="min-w-0 flex-1 break-words">
-                    <span className="block text-lg font-extrabold">
-                      {counter.name}
-                    </span>
-                    <span className="mt-1 block text-sm font-bold">
-                      {pending === counter.id
-                        ? t.pending
-                        : counter.status === "OPEN"
-                          ? t.join
-                          : t.paused}
-                    </span>
-                  </span>
-                  <span
-                    className={`arrival-status ${counter.status === "PAUSED" ? "arrival-status-paused" : ""}`}
+            {sortCounters(data?.counters ?? []).map((counter) => {
+              const theme = getCounterTheme(counter.prefix);
+              const open = counter.status === "OPEN";
+              const ahead = counter.waitingCount;
+              const estimate = Math.max(
+                estimatedWait(ahead, counter.avgServiceSeconds, null),
+                counter.calledTicket ? 1 : 0,
+              );
+              const count = formatNumber(ahead, language);
+              const waitLabel = ahead
+                ? `${count} ${t.waitingWord}`
+                : t.noWait;
+              return (
+                <li key={counter.id}>
+                  <button
+                    type="button"
+                    disabled={!online || pending !== null || !open}
+                    aria-label={`${counter.name} · ${open ? t.open : t.paused}${open ? ` · ${waitLabel}` : ""}`}
+                    className="arrival-counter"
+                    style={counterVars(theme)}
+                    onClick={() => void issue(counter)}
                   >
-                    {counter.status === "OPEN" ? t.open : t.paused}
-                  </span>
-                  {counter.status === "OPEN" && (
-                    <ArrowRight
-                      className="size-5 shrink-0"
-                      aria-hidden="true"
-                    />
-                  )}
-                </button>
-              </li>
-            ))}
+                    <CounterBadge prefix={counter.prefix} size="lg" />
+                    <span className="min-w-0 flex-1 break-words">
+                      <span className="block text-lg leading-snug font-extrabold">
+                        {counter.name}
+                      </span>
+                      {pending === counter.id ? (
+                        <span className="arrival-meta">
+                          <Tx k="pending" />
+                        </span>
+                      ) : open ? (
+                        <span className="arrival-meta">
+                          <span>
+                            <Users className="size-4" aria-hidden="true" />
+                            {ahead ? (
+                              <Dual
+                                en={`${formatNumber(ahead, "en")} waiting`}
+                                bn={`${formatNumber(ahead, "bn")} জন অপেক্ষায়`}
+                              />
+                            ) : (
+                              <Tx k="noWait" />
+                            )}
+                          </span>
+                          {estimate > 0 && (
+                            <span>
+                              <Clock3 className="size-4" aria-hidden="true" />
+                              ~{formatWait(estimate, language)}
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="arrival-meta">
+                          <Tx k="pausedError" />
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className={`arrival-status ${open ? "" : "arrival-status-paused"}`}
+                    >
+                      {open ? t.open : t.paused}
+                    </span>
+                    {open && (
+                      <ArrowRight
+                        className="size-5 shrink-0 text-slate-500"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
