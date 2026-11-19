@@ -1,19 +1,39 @@
-# Phase 1 architecture
+# SaaS architecture
 
-QueueWindow uses one Next.js App Router application, TypeScript, Tailwind CSS, and Drizzle ORM. The server uses a Neon WebSocket Pool so signup can run an interactive PostgreSQL transaction. The schema is defined in `src/db/schema.ts` with a baseline in `drizzle/`.
+QueueWindow uses Next.js App Router, TypeScript, Drizzle ORM, and a Neon WebSocket Pool for interactive PostgreSQL transactions. The schema lives in `src/db/schema.ts`. SQL migrations live in `drizzle/`.
 
-## Tenant data
+## Identity and tenant boundaries
 
-Each user, counter, and ticket belongs to an organization. PostgreSQL rejects a ticket whose organization differs from its counter's organization. Deleting an organization cascades through its users, counters, and tickets. Ticket lookup indexes support tenant status and counter history queries.
+Signup creates an organization, its owner, and Counter 1 in one transaction. Owners require email. Staff may sign in with just a username and password. Usernames and emails are globally unique and stored in lowercase.
 
-Usernames and emails are globally unique and stored in lowercase. Usernames cannot contain an at-sign, so sign-in selects an unambiguous lookup. Owners require email. Staff may use a username alone.
+The HTTP-only `qw_session` cookie carries a signed 24-hour JWT. Next.js Proxy redirects unauthenticated page requests. Desk and admin APIs look up the current user and organization together, and admin APIs require the current database role to be `OWNER`. Authenticated POST, PATCH, and DELETE requests require a matching Origin. Public requests resolve tenant membership through the organization slug. Cross-tenant resources return 404.
 
-## Authentication
+## Queue rules and analytics
 
-Signup creates an organization, an owner, and Counter 1 in one transaction. The trial expiry is 14 days after signup. Slugs combine a normalized organization name with a random UUID and have a unique database constraint. Passwords use bcrypt with cost 12. Input is capped at bcrypt's 72-byte boundary.
+- The business day starts at midnight in `Asia/Dhaka`. Numbering starts from 1 separately for each counter and business day. Existing waiting and called tickets remain in the queue across midnight.
+- Issuance and staff transitions lock the counter row. PostgreSQL enforces one called ticket per counter, one sequence per counter and day, and a matching organization on every ticket and counter.
+- Idempotency keys are scoped to organization, counter, and issuance source. Replay returns the original ticket even after the business day changes or new issuance is blocked. New issuance returns 402 for expired organizations and 409 for paused counters. Staff can still finish existing tickets.
+- Call next serves the active ticket and calls the oldest waiting ticket. If the waiting list is empty, it leaves the active ticket in place. Recall changes the display timestamp and keeps the first-call time for analytics. Counter deletion requires all waiting and called tickets to be resolved and cascades to its ticket history.
+- Daily analytics use the tickets issued that business day. Average wait uses first call minus issuance. Average service uses completion minus first call for served tickets. Averages are weighted across counters and return null without samples. Visitor position includes the called ticket. The estimated wait uses today's completed service average and any remaining active service, with a fallback of five minutes per waiting ticket ahead.
 
-The HTTP-only `qw_session` cookie carries a signed 24-hour HS256 JWT with SameSite=Lax and Secure in production. Middleware redirects unauthenticated desk and admin requests. Server rendering and `/api/auth/me` verify the user and organization together against PostgreSQL. The admin page checks the current database role. Auth POSTs require the expected Origin. Error responses carry a request ID and omit credentials, tokens, and database errors.
+## API surface
 
-## Phase boundary
+| Method and path | Behavior |
+| --- | --- |
+| `GET, POST /api/admin/counters` | List or create counters. Prefixes are one or two uppercase letters or digits and unique within the organization. |
+| `PATCH, DELETE /api/admin/counters/[id]` | Edit name, prefix, or status, or delete a counter. |
+| `GET, POST /api/admin/staff` and `DELETE /api/admin/staff/[id]` | List, create, or remove staff. Owner accounts are protected. |
+| `PATCH /api/admin/organization` | Update name, hex primary color, and optional HTTPS logo URL. |
+| `GET /api/admin/analytics` | Return daily organization totals and a per-counter breakdown. |
+| `GET /api/desk/state?counterId=…` | List counters and return the selected queue and daily stats. Omitting the ID selects the first counter. |
+| `POST /api/desk/action` | Send `action` and `counterId`. `ISSUE_WALKIN` also takes an idempotency key. `COMPLETE`, `SKIP`, and `RECALL` take a ticket ID. |
+| `GET /api/public/[orgSlug]/display` | Read branding, the called token, and up to three waiting tokens per counter. |
+| `POST /api/public/[orgSlug]/join` | Send `counterId` and a UUID v4 `idempotencyKey`. Keep the key for retries of the same request. |
+| `GET /api/public/[orgSlug]/ticket/[ticketId]` | Read status, counter name, people ahead, and estimated wait using the ticket ID returned on admission. |
+| `GET /api/public/[orgSlug]/stream` | Receive an SSE `snapshot` immediately, followed by `update` events when display data changes. |
 
-Phase 1 establishes tenant ownership, auth, and schema. Enforcing trial expiry, public auth rate limiting, account recovery, session revocation, staff account management, queue operations, and the dashboard and TV surfaces remain future work. Any future data access must scope queries by the server-verified organization ID. The v1 queue sources and tests are retained in `legacy/v1` for reference and the complete v1 release is in Git history.
+Public display data contains ticket numbers and excludes private ticket IDs. Public admission allows 10 new tickets per organization and client IP in a 60-second window. PostgreSQL enforces the shared limit across counters and instances. The app stores a keyed IP digest, and retries do not use another slot.
+
+The stream polls an indexed PostgreSQL snapshot every two seconds without holding a transaction open. It closes after 25 seconds and sends `retry: 2000` for automatic reconnection.
+
+Phase 3 covers the dashboard, desk, visitor and TV interfaces. Password recovery and deployment are outside Phase 2. The original single-counter release is available in Git history.

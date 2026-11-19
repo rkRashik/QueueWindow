@@ -1,13 +1,16 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  date,
   foreignKey,
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -67,13 +70,17 @@ export const counters = pgTable(
       .references(() => organizations.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     prefix: text("prefix").notNull(),
-    status: text("status").notNull().default("OPEN"),
+    status: text("status", { enum: ["OPEN", "PAUSED"] })
+      .notNull()
+      .default("OPEN"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (table) => [
     unique("counters_org_id_key").on(table.orgId, table.id),
+    unique("counters_org_prefix_key").on(table.orgId, table.prefix),
+    check("counters_status_check", sql`${table.status} in ('OPEN', 'PAUSED')`),
     index("counters_org_status_idx").on(table.orgId, table.status),
   ],
 );
@@ -95,7 +102,11 @@ export const tickets = pgTable(
     issuedAt: timestamp("issued_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    businessDate: date("business_date")
+      .generatedAlwaysAs(sql`("issued_at" AT TIME ZONE 'Asia/Dhaka')::date`)
+      .notNull(),
     calledAt: timestamp("called_at", { withTimezone: true }),
+    firstCalledAt: timestamp("first_called_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
   },
   (table) => [
@@ -109,10 +120,44 @@ export const tickets = pgTable(
       sql`${table.status} in ('WAITING', 'CALLED', 'SERVED', 'SKIPPED')`,
     ),
     index("tickets_org_status_idx").on(table.orgId, table.status),
+    unique("tickets_counter_day_sequence_key").on(
+      table.orgId,
+      table.counterId,
+      table.businessDate,
+      table.sequence,
+    ),
+    uniqueIndex("tickets_counter_called_key")
+      .on(table.orgId, table.counterId)
+      .where(sql`${table.status} = 'CALLED'`),
+    index("tickets_counter_waiting_idx")
+      .on(
+        table.orgId,
+        table.counterId,
+        table.issuedAt,
+        table.sequence,
+        table.id,
+      )
+      .where(sql`${table.status} = 'WAITING'`),
     index("tickets_org_counter_issued_idx").on(
       table.orgId,
       table.counterId,
       table.issuedAt,
     ),
+  ],
+);
+
+export const publicJoinLimits = pgTable(
+  "public_join_limits",
+  {
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    clientHash: text("client_hash").notNull(),
+    windowEndsAt: timestamp("window_ends_at", { withTimezone: true }).notNull(),
+    hits: integer("hits").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.orgId, table.clientHash] }),
+    index("public_join_limits_expiry_idx").on(table.orgId, table.windowEndsAt),
   ],
 );

@@ -1,5 +1,13 @@
 # Verification
 
+## SaaS Phase 2 (19 November 2026)
+
+- Typecheck, ESLint, the production build, and Drizzle migration validation passed. Next.js used the Proxy convention.
+- Vitest passed all 20 tests across 4 files with a disposable local PostgreSQL 18 database. The tests applied both migrations and covered concurrent issuance, retries, daily reset, tenant isolation, role enforcement on every admin method, expiry, desk transitions, rate limiting, public ticket privacy, and SSE updates and closure.
+- The production build passed all 6 Chromium regression tests, including protected page routes and account sign-out.
+- Phase 2 SQL was verified locally. Hosted Neon still needs the Phase 2 migration, and hosted Vercel streaming remains unverified.
+
+
 ## SaaS Phase 1 (19 November 2026)
 
 - Drizzle Kit applied the four-table schema to the configured Neon database.

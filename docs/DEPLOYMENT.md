@@ -1,7 +1,15 @@
-# Phase 1 environment setup
+# Environment setup
 
-Use a configured Neon PostgreSQL database. Put the connection string in `DATABASE_URL` and a randomly generated signing key of at least 32 bytes in `JWT_SECRET`. Keep both server-side. Set `APP_URL` to the exact HTTPS origin when hosting the app.
+Use a configured Neon PostgreSQL database. Set `DATABASE_URL` and a random `JWT_SECRET` of at least 32 bytes in `.env.local`. Use the exact public HTTPS origin in `APP_URL` when hosting.
 
-Drizzle Kit loads `.env.local` and honors an existing process-level `DATABASE_URL`. Confirm the target and review the proposed SQL when running `npx drizzle-kit push`. Use a separate database for development and production. The baseline SQL is for fresh databases. Use one schema application method per environment so the baseline is not applied twice. Phase 1 does not migrate records from the previous SQLite release.
+## Database upgrade
 
-Deployment requires separate approval. Before opening public access, add auth abuse controls and verify email recovery, session revocation, and database backups and restoration.
+For an empty database, apply `drizzle/0000_phase_1.sql` followed by `drizzle/0001_phase_2.sql`. For the existing Phase 1 Neon database that was initialized with Drizzle Kit push, apply only `drizzle/0001_phase_2.sql` once, in a single transaction. The migration backfills first-call timestamps as well as adding the Phase 2 constraints. Use a separate development database and check the target before applying SQL.
+
+## Public admission and stream
+
+Vercel supplies the client IP header used by public admission. On another host, set `TRUSTED_CLIENT_IP_HEADER` only to a header your reverse proxy overwrites with a single verified client IP. Requests with no trusted IP share one admission bucket per organization. [Vercel request headers](https://vercel.com/docs/headers/request-headers)
+
+The SSE route uses a 30-second function limit and closes streams after 25 seconds. Configure any reverse proxy to forward SSE without buffering. [Vercel Functions limits](https://vercel.com/docs/functions/limitations)
+
+Deployment requires separate approval. Before opening public access, verify auth abuse controls, email recovery, session revocation, and database backup and restoration.

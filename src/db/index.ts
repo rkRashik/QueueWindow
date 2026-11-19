@@ -1,5 +1,11 @@
 import { Pool } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+
+export type Database = PgDatabase<PgQueryResultHKT>;
+export type QueueTransaction = Parameters<
+  Parameters<Database["transaction"]>[0]
+>[0];
 
 function connect() {
   const connectionString = process.env.DATABASE_URL;
@@ -16,6 +22,6 @@ const cache = globalThis as typeof globalThis & {
   queueWindowDb?: ReturnType<typeof connect>;
 };
 
-export function getDb() {
+export function getDb(): Database {
   return (cache.queueWindowDb ??= connect());
 }

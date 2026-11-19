@@ -16,6 +16,7 @@ const password = z
   .min(1)
   .max(72)
   .refine(byteLimit, "Use at most 72 bytes.");
+export const newPassword = z.string().min(12).pipe(password);
 
 export const signupInput = z
   .object({
@@ -23,7 +24,7 @@ export const signupInput = z
     fullName: z.string().trim().min(1).max(100),
     username,
     email,
-    password: z.string().min(12).pipe(password),
+    password: newPassword,
   })
   .strict();
 

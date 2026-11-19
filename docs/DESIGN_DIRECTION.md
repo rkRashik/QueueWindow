@@ -1,6 +1,6 @@
 # Design direction
 
-Phase 1 on the SaaS rebuild branch replaces the v1 application runtime with the Neon schema and organization authentication. See [Phase 1 architecture](ARCHITECTURE.md) for current behavior.
+This document records the original single-counter release. The SaaS rebuild adds organization authentication and multi-counter APIs. See [SaaS architecture](ARCHITECTURE.md) for current behavior.
 
 The staff desk pairs a waiting list with a focused active-ticket surface. Mobile keeps the primary action within reach at the bottom of the screen. The action names the actual next ticket, and optional elapsed time comes from server events.
 

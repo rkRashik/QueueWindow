@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
+import { isUniqueViolation } from "@/db/errors";
 import { counters, organizations, users } from "@/db/schema";
 import { signSession } from "@/lib/auth";
 import { HttpError } from "@/lib/http";
@@ -23,19 +24,12 @@ function organizationSlug(name: string) {
   return `${base || "workspace"}-${crypto.randomUUID()}`;
 }
 
-function isIdentifierConflict(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  if ("code" in error && error.code === "23505" && "constraint" in error) {
-    return (
-      error.constraint === "users_username_unique" ||
-      error.constraint === "users_email_unique"
-    );
-  }
-  return isIdentifierConflict(error.cause);
+export function hashPassword(password: string) {
+  return bcrypt.hash(password, passwordCost);
 }
 
 export async function signup(input: z.infer<typeof signupInput>) {
-  const passwordHash = await bcrypt.hash(input.password, passwordCost);
+  const passwordHash = await hashPassword(input.password);
 
   try {
     return await getDb().transaction(async (tx) => {
@@ -79,7 +73,9 @@ export async function signup(input: z.infer<typeof signupInput>) {
       });
     });
   } catch (error) {
-    if (isIdentifierConflict(error)) {
+    if (
+      isUniqueViolation(error, "users_username_unique", "users_email_unique")
+    ) {
       throw new HttpError(
         "An account already uses that email or username.",
         409,

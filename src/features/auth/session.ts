@@ -16,6 +16,10 @@ export function setSessionCookie(response: NextResponse, token: string | null) {
 
 export async function getCurrentIdentity() {
   const cookie = (await cookies()).get(sessionCookie);
-  const claims = await verifySession(cookie?.value);
+  return identityForSession(cookie?.value);
+}
+
+export async function identityForSession(token: string | undefined) {
+  const claims = await verifySession(token);
   return claims ? findIdentity(claims.userId, claims.orgId) : null;
 }
