@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.env*
+!.env.example
+data/
+*.db*
+test-results/
+playwright-report/
+*.tsbuildinfo
+.artifacts/
+
+*.log
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+
+.vscode/

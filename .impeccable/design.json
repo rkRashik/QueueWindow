@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-18T15:40:00Z",
+  "title": "Design System: QueueWindow",
+  "extensions": {
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.16,1,.3,1)"
+      },
+      {
+        "name": "press",
+        "value": "180ms"
+      },
+      {
+        "name": "dialog",
+        "value": "250ms"
+      },
+      {
+        "name": "announcement",
+        "value": "550ms"
+      },
+      {
+        "name": "reducedMotion",
+        "value": "Disable movement and transitions"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "600px"
+      },
+      {
+        "name": "entry",
+        "value": "760px"
+      },
+      {
+        "name": "tablet",
+        "value": "900px"
+      }
+    ]
+  },
+  "narrative": {
+    "overview": "English-first service interface with open operational screens and a blue public display. User visual approval pending.",
+    "donts": [
+      "English first",
+      "No angled cards",
+      "No repeated dashboard cards",
+      "Status must have text",
+      "User visual approval pending"
+    ]
+  }
+}
