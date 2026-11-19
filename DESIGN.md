@@ -22,3 +22,5 @@ Plus Jakarta Sans carries English UI and Hind Siliguri carries Bangla. Desk and 
 Use white panels with a hairline slate border on the off-white canvas. Indigo marks primary actions. Emerald, amber, and rose accompany text labels for called, paused, and destructive states. Keep support copy and secondary controls visually quiet.
 
 The waiting list uses short transitions to clarify entries and exits. Reduced motion removes that movement. Maintain visible focus, native dialog behavior, and independent horizontal scrolling for dense tables.
+
+The TV uses a midnight canvas, slate cards, and large emerald tokens. Bangla and English labels stay visible together. The visitor experience uses dark ink, larger touch targets, and an explicit called state. Print outputs use black on white with a vector QR and bilingual instructions.

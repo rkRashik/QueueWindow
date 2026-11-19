@@ -23,6 +23,12 @@ const config: NextConfig = {
           },
         ],
       },
+      ...["/join/:orgSlug/ticket/:ticketId", "/kiosk/:orgSlug"].map(
+        (source) => ({
+          source,
+          headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+        }),
+      ),
     ];
   },
 };

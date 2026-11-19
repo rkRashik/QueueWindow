@@ -19,7 +19,7 @@ import { useResource } from "./admin-data";
 import { AdminHeading, ResourceNotice } from "./admin-ui";
 import { CountersSection, TeamSection } from "./admin-operations";
 import { LocaleProvider, useLocale } from "./locale";
-import { Toast, useToast, WorkspaceHeader, type Workspace } from "./ui";
+import { Notice, Toast, useToast, WorkspaceHeader, type Workspace } from "./ui";
 
 export const sections = ["overview", "counters", "team", "branding"] as const;
 export type AdminSection = (typeof sections)[number];
@@ -195,6 +195,11 @@ function Admin({
           ))}
         </nav>
         <main id="main" className="min-w-0 py-7 sm:py-9">
+          {branding.plan === "DEMO" && (
+            <div className="mb-5">
+              <Notice title={t.liveDemo}>{t.demoReadOnly}</Notice>
+            </div>
+          )}
           {section === "overview" && <Overview />}
           {section === "counters" && <CountersSection notify={toast.notify} />}
           {section === "team" && <TeamSection notify={toast.notify} />}

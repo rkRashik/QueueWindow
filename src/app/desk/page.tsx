@@ -15,6 +15,8 @@ export default async function DeskPage() {
         name: organization.name,
         slug: organization.slug,
         role: user.role,
+        demo:
+          organization.slug === "demo-clinic" && organization.plan === "DEMO",
         expiresAt: organization.expiresAt.toISOString(),
       }}
     />

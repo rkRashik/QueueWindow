@@ -134,6 +134,40 @@ describe.skipIf(!databaseUrl)("PostgreSQL queue and route integration", () => {
   });
   afterEach(() => vi.unstubAllEnvs());
 
+  it("provisions just one demo owner and seed across concurrent entries", async () => {
+    const { POST } = await import("../src/app/api/auth/demo/route");
+    const signIn = () =>
+      POST(
+        new NextRequest("http://localhost/api/auth/demo", {
+          method: "POST",
+          headers: { Origin: "http://localhost", Accept: "application/json" },
+        }),
+      );
+    const responses = await Promise.all([signIn(), signIn(), signIn()]);
+    expect(responses.map((response) => response.status)).toEqual([
+      200, 200, 200,
+    ]);
+    const [demo] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.slug, "demo-clinic"));
+    expect(demo.plan).toBe("DEMO");
+    expect(
+      await db.select().from(users).where(eq(users.orgId, demo.id)),
+    ).toHaveLength(1);
+    expect(
+      await db.select().from(counters).where(eq(counters.orgId, demo.id)),
+    ).toHaveLength(2);
+    expect(
+      await db.select().from(tickets).where(eq(tickets.orgId, demo.id)),
+    ).toHaveLength(5);
+    const cookie = responses[0].headers.getSetCookie()[0].split(";")[0];
+    const { POST: addStaff } = await import("../src/app/api/admin/staff/route");
+    expect(
+      (await addStaff(request("/api/admin/staff", "POST", cookie))).status,
+    ).toBe(403);
+  });
+
   it("serializes issuance per counter and makes concurrent retries return one ticket", async () => {
     const { organization, a, b } = await fixture();
     const issue = (counterId: string, key: string) =>

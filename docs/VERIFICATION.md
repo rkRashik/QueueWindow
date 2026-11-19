@@ -1,5 +1,13 @@
 # Verification
 
+## SaaS Phase 3B (19 November 2026)
+
+- Typecheck, ESLint, the production build, and all 21 Vitest tests passed. Local PostgreSQL tests verified concurrent demo provisioning and the demo admin write guard.
+- All 9 Chromium tests passed on the production build with temporary Neon workspaces. The new journey covered the homepage demo, visitor retry after a lost successful response, staff calls, live TV and visitor updates, poster print controls, and kiosk reset by Done and timer.
+- Browser review checked the landing page at desktop and mobile widths and six TV counters at 1280×720 after fonts loaded. Sampled enhanced contrast checks reported no findings on the Bangla arrival and waiting ticket screens.
+- Chromium exported the QR poster as one A4 page and verified the receipt content widths for 58 mm and 80 mm rolls. The browser accepted the TV sound unlock. Physical printers, TV hardware, speech voices, vibration, and native screen readers remain untested.
+
+
 ## SaaS Phase 3A (19 November 2026)
 
 - The configured Neon database already had the Phase 1 schema from Drizzle Kit push. The verified baseline was registered in the migration ledger. Drizzle Kit migrate applied Phase 2, and both migration hashes matched this checkout.

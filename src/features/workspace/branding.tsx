@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { BadgeCheck, Building2, Link2, Paintbrush } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { AdminHeading } from "./admin-ui";
@@ -234,7 +235,24 @@ export function BrandingSection({
               </h2>
             </div>
             <div className="space-y-4 p-5">
-              <p className="text-sm text-muted">{t.publicLinkNote}</p>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  className="btn"
+                  href={`/print/${slug}/qr`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t.printQr}
+                </Link>
+                <Link
+                  className="btn"
+                  href={`/kiosk/${slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t.kiosk}
+                </Link>
+              </div>
               {[
                 [t.tv, `/display/${slug}`],
                 [t.visitorLink, `/join/${slug}`],

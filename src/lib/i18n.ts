@@ -123,8 +123,12 @@ const en = {
   logoUnavailable: "Logo preview unavailable",
   preview: "Brand preview",
   links: "Public links",
-  publicLinkNote:
-    "These links will open when the public screens are available.",
+  printQr: "Print QR sign",
+  kiosk: "Reception kiosk",
+  liveDemo: "Live demo",
+  demoDetail: "Try the shared queue with sample tickets.",
+  demoReadOnly:
+    "You can view settings here. The shared demo keeps its counters and team read-only.",
   subscription: "Subscription",
   plan: "Plan",
   trial: "Trial",
@@ -256,7 +260,12 @@ const bn: typeof en = {
   logoUnavailable: "লোগোর প্রিভিউ পাওয়া যায়নি",
   preview: "ব্র্যান্ড প্রিভিউ",
   links: "পাবলিক লিংক",
-  publicLinkNote: "পাবলিক স্ক্রিন চালু হলে এই লিংকগুলো ব্যবহার করা যাবে।",
+  printQr: "QR সাইন প্রিন্ট করুন",
+  kiosk: "রিসেপশন কিয়স্ক",
+  liveDemo: "লাইভ ডেমো",
+  demoDetail: "নমুনা টিকিট দিয়ে শেয়ার করা সারিটি ব্যবহার করুন।",
+  demoReadOnly:
+    "এখানে সেটিংস দেখতে পারবেন। শেয়ার করা ডেমোর কাউন্টার ও কর্মীদের তথ্য শুধু দেখা যাবে।",
   subscription: "সাবস্ক্রিপশন",
   plan: "প্ল্যান",
   trial: "ট্রায়াল",

@@ -23,6 +23,7 @@ import {
 import { LanguageSwitch, useLocale } from "./locale";
 
 export type Workspace = {
+  demo?: boolean;
   name: string;
   slug: string;
   role: "OWNER" | "STAFF";

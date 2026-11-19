@@ -13,6 +13,7 @@ import {
   Pause,
   Play,
   Plus,
+  Printer,
   QrCode,
   Settings2,
   SkipForward,
@@ -327,6 +328,15 @@ function Desk({ workspace }: { workspace: Workspace }) {
               <QrCode aria-hidden="true" />
               {t.visitorLink}
             </a>
+            <a
+              className="btn btn-quiet"
+              href={`/print/${workspace.slug}/qr`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Printer aria-hidden="true" />
+              {t.printQr}
+            </a>
             {workspace.role === "OWNER" && (
               <Link className="btn btn-quiet" href="/admin">
                 <Settings2 aria-hidden="true" />
@@ -338,6 +348,34 @@ function Desk({ workspace }: { workspace: Workspace }) {
       </WorkspaceHeader>
 
       <main id="main" className="shell-width py-7 sm:py-9">
+        {workspace.demo && (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm text-indigo-950">
+            <div>
+              <strong>{t.liveDemo}</strong>
+              <span className="ms-2">{t.demoDetail}</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              <a
+                className="btn btn-quiet"
+                href={`/display/${workspace.slug}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Monitor aria-hidden="true" />
+                {t.tv}
+              </a>
+              <a
+                className="btn btn-quiet"
+                href={`/join/${workspace.slug}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <QrCode aria-hidden="true" />
+                {t.visitorLink}
+              </a>
+            </div>
+          </div>
+        )}
         <div className="mb-6">
           <h1 className="page-heading">{t.desk}</h1>
           <p className="mt-2 text-sm text-muted">{t.deskDetail}</p>

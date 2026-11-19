@@ -12,4 +12,8 @@ Vercel supplies the client IP header used by public admission. On another host, 
 
 The SSE route uses a 30-second function limit and closes streams after 25 seconds. Configure any reverse proxy to forward SSE without buffering. [Vercel Functions limits](https://vercel.com/docs/functions/limitations)
 
+## QR signs and receipts
+
+Set `APP_URL` to the public origin before printing a sign or issuing kiosk receipts. Visitors' phones must be able to reach that origin. Use A4 for the venue sign. Select 58 mm or 80 mm in the kiosk and match the width in the printer dialog. Browser print headers and footers can be turned off in the dialog.
+
 Deployment requires separate approval. Before opening public access, verify auth abuse controls, email recovery, session revocation, and database backup and restoration.

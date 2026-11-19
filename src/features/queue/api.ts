@@ -23,7 +23,15 @@ export async function requireIdentity(request: NextRequest, ownerOnly = false) {
   if (!identity) throw new HttpError("Sign in to access this workspace.", 401);
   if (ownerOnly && identity.user.role !== "OWNER")
     throw new HttpError("Owner access is required.", 403);
-  if (request.method !== "GET") assertSameOrigin(request);
+  if (request.method !== "GET") {
+    assertSameOrigin(request);
+    if (
+      ownerOnly &&
+      identity.organization.slug === "demo-clinic" &&
+      identity.organization.plan === "DEMO"
+    )
+      throw new HttpError("The shared demo settings are read-only.", 403);
+  }
   return identity.user;
 }
 

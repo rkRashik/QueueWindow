@@ -55,6 +55,7 @@ export async function issueTicket(
     const [subscription] = await tx
       .select({
         expiresAt: organizations.expiresAt,
+        plan: organizations.plan,
         now: sql<number>`extract(epoch from statement_timestamp()) * 1000`.mapWith(
           Number,
         ),
@@ -82,6 +83,11 @@ export async function issueTicket(
         ),
       );
     const sequence = (latest.sequence ?? 0) + 1;
+    if (subscription.plan === "DEMO" && sequence > 200)
+      throw new AppError(
+        "This demo counter has reached its daily ticket limit.",
+        429,
+      );
     const [ticket] = await tx
       .insert(tickets)
       .values({

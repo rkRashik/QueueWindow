@@ -1,0 +1,403 @@
+@layer components {
+  .venue-mark {
+    @apply size-12 shrink-0 rounded-xl border border-slate-300;
+  }
+
+  .visitor-shell {
+    @apply mx-auto min-h-dvh w-full max-w-[41rem] px-4 pb-12 sm:px-7;
+    color: #0f172a;
+  }
+  .visitor-shell [lang="en"],
+  .qr-poster [lang="en"],
+  .tv-shell [lang="en"] {
+    font-family: var(--font-jakarta), system-ui, sans-serif;
+  }
+  .visitor-header {
+    @apply flex flex-wrap items-center justify-between gap-3 border-b border-slate-300 py-4;
+  }
+  .visitor-content {
+    @apply pt-6 sm:pt-8;
+  }
+  .visitor-heading {
+    @apply text-[clamp(1.85rem,7vw,2.75rem)] leading-tight font-extrabold -tracking-[.03em];
+  }
+  .visitor-language {
+    @apply inline-flex shrink-0 items-center gap-0.5 rounded-full border border-slate-500 bg-white p-0.5;
+  }
+  .visitor-language button {
+    @apply min-h-12 min-w-12 rounded-full px-3 text-base font-extrabold;
+  }
+  .visitor-language button[aria-pressed="true"] {
+    @apply bg-slate-900 text-white;
+  }
+  .visitor-language button[aria-pressed="false"]:hover {
+    @apply bg-slate-100;
+  }
+  .visitor-button {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-slate-500 bg-white px-3 py-2 text-center text-sm font-extrabold text-slate-950 sm:px-4;
+  }
+  .visitor-button:hover {
+    @apply bg-slate-100;
+  }
+  .visitor-primary {
+    @apply border-indigo-900 bg-indigo-900 text-white;
+  }
+  .visitor-primary:hover {
+    @apply bg-indigo-950;
+  }
+  .visitor-alert,
+  .visitor-note {
+    @apply mb-3 rounded-lg border px-4 py-3 font-semibold;
+  }
+  .visitor-alert {
+    @apply border-rose-300 bg-rose-50 text-rose-950;
+  }
+  .visitor-note {
+    @apply flex items-center gap-2 border-amber-300 bg-amber-50 text-amber-950;
+  }
+  .visitor-card {
+    @apply mb-4 rounded-xl border border-slate-300 bg-white px-4 py-5 sm:px-6 sm:py-6;
+  }
+  .arrival-counter {
+    @apply flex min-h-[5.25rem] w-full items-center gap-3 rounded-xl border border-slate-500 bg-white p-4 text-start text-slate-950;
+    transition: background-color 120ms ease;
+  }
+  .arrival-counter:hover:not(:disabled) {
+    @apply bg-indigo-50;
+  }
+  .arrival-counter:disabled {
+    @apply cursor-not-allowed border-slate-300 bg-slate-100 text-slate-800;
+  }
+  .arrival-icon {
+    @apply grid size-10 shrink-0 place-items-center rounded-lg border border-slate-300 bg-slate-100 text-slate-950;
+  }
+  .arrival-status {
+    @apply inline-flex w-fit shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-xs font-extrabold text-emerald-950;
+  }
+  .arrival-status-paused {
+    @apply bg-amber-100 text-amber-950;
+  }
+  .visitor-ticket {
+    @apply text-center;
+  }
+  .visitor-token {
+    @apply my-3 break-all text-[clamp(3.2rem,16vw,5.5rem)] leading-none font-extrabold -tracking-[.04em];
+  }
+  .visitor-called {
+    @apply border-emerald-600 bg-emerald-50 text-[#052e20];
+  }
+  .visitor-skipped {
+    @apply border-amber-500 bg-amber-50 text-amber-950;
+  }
+  .ticket-status {
+    @apply mt-5 border-t border-slate-300 pt-4;
+  }
+  .ticket-metrics {
+    @apply mt-4 grid grid-cols-2 gap-2;
+  }
+  .ticket-metrics > div {
+    @apply rounded-lg border border-slate-300 bg-slate-50 p-2 sm:p-3;
+  }
+  .ticket-metrics dt {
+    @apply text-sm font-extrabold;
+  }
+  .ticket-metrics dd {
+    @apply mt-1 text-[clamp(1.45rem,7vw,2.3rem)] leading-tight font-extrabold;
+  }
+  .ticket-metrics dd span {
+    @apply text-sm;
+  }
+  .ticket-progress {
+    @apply mt-4 h-2.5 overflow-hidden rounded-full bg-slate-200;
+  }
+  .ticket-progress > div {
+    @apply h-full rounded-full bg-indigo-800;
+  }
+
+  .tv-shell {
+    @apply min-h-dvh px-4 py-4 text-slate-50 sm:px-7 sm:py-6 lg:px-10;
+    background: #0b1120;
+  }
+  .tv-shell :focus-visible {
+    outline-color: #a5b4fc;
+  }
+  .tv-head {
+    @apply flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4;
+  }
+  .tv-clock {
+    @apply flex shrink-0 items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-[clamp(1rem,2vw,1.65rem)] font-extrabold;
+  }
+  .tv-toolbar {
+    @apply my-4 flex flex-wrap items-center justify-between gap-2;
+  }
+  .tv-control {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-100;
+  }
+  .tv-control:hover:not(:disabled) {
+    @apply bg-slate-800;
+  }
+  .tv-control:disabled {
+    @apply cursor-not-allowed text-slate-400;
+  }
+  .tv-control[aria-pressed="true"],
+  .tv-unlock {
+    @apply border-emerald-500/75 bg-emerald-950 text-emerald-100;
+  }
+  .tv-language-pair {
+    @apply inline-flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5;
+  }
+  .tv-language-pair > [lang="bn"] {
+    font-size: 1.14em;
+  }
+  .tv-grid {
+    @apply grid gap-4 lg:gap-5;
+  }
+  .tv-card {
+    @apply min-w-0 overflow-hidden rounded-xl border border-slate-800;
+    background: #111827;
+  }
+  .tv-card-head {
+    @apply flex min-h-14 flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-4 py-3 sm:px-5;
+  }
+  .tv-card-head h2 {
+    @apply text-[clamp(1rem,1.8vw,1.5rem)] leading-snug font-extrabold;
+  }
+  .tv-paused {
+    @apply rounded-full bg-amber-950 px-2 py-1 text-xs font-extrabold text-amber-200;
+  }
+  .tv-serving {
+    @apply grid min-h-40 content-center gap-2 px-4 py-4 sm:px-5;
+  }
+  .tv-serving > .tv-language-pair,
+  .tv-next > .tv-language-pair {
+    @apply text-[clamp(.78rem,1.25vw,.98rem)] font-extrabold text-slate-300;
+  }
+  .tv-number-frame {
+    @apply min-w-0 overflow-hidden py-1;
+  }
+  .tv-token {
+    @apply break-all text-[clamp(3.65rem,8.75vw,9rem)] leading-none font-extrabold -tracking-[.04em];
+    color: #10b981;
+  }
+  .tv-token-idle {
+    @apply text-slate-400;
+  }
+  .tv-next {
+    @apply grid gap-2 border-t border-slate-800 px-4 py-3.5 sm:px-5;
+  }
+  .tv-upcoming {
+    @apply max-w-full break-all rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[clamp(1rem,1.9vw,1.65rem)] font-extrabold text-slate-100;
+  }
+  .tv-grid[data-layout="single"] .tv-serving {
+    @apply min-h-[clamp(14rem,36dvh,30rem)];
+  }
+  .tv-grid[data-layout="single"] .tv-token {
+    @apply text-[clamp(5rem,15vw,14rem)];
+  }
+  @media (min-width: 720px) {
+    .tv-grid:not([data-layout="single"]) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1160px) {
+    .tv-grid[data-layout="dense"] {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (max-height: 980px) and (min-width: 1000px) {
+    .tv-grid:not([data-layout="single"]) .tv-serving {
+      min-height: 0;
+    }
+    .tv-grid:not([data-layout="single"]) .tv-token {
+      font-size: clamp(3.65rem, 9dvh, 7rem);
+    }
+  }
+  @media (max-height: 800px) and (min-width: 1000px) {
+    .tv-shell {
+      padding-block: 14px;
+    }
+    .tv-head {
+      padding-bottom: 10px;
+    }
+    .tv-toolbar {
+      margin-block: 8px;
+    }
+    .tv-card-head {
+      min-height: 44px;
+      padding-block: 8px;
+    }
+    .tv-serving,
+    .tv-next {
+      gap: 5px;
+      padding-block: 9px;
+    }
+    .tv-upcoming {
+      padding-block: 4px;
+    }
+  }
+
+  .poster-shell {
+    @apply mx-auto w-full max-w-[48rem] px-4 py-5;
+  }
+  .poster-controls {
+    @apply mb-4 flex flex-wrap items-center justify-between gap-2;
+  }
+  .qr-poster {
+    @apply mx-auto flex min-h-[min(47rem,88dvh)] flex-col items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-7 text-center text-black sm:px-10;
+    page: venue-poster;
+  }
+  .poster-venue {
+    @apply mt-3 w-full break-words text-lg font-extrabold sm:text-xl;
+  }
+  .qr-poster h1 {
+    @apply mt-3 text-[clamp(1.9rem,6vw,3.5rem)] leading-tight font-extrabold;
+  }
+  .poster-subtitle {
+    @apply mt-1 text-[clamp(1.15rem,4vw,1.85rem)] font-extrabold;
+  }
+  .poster-qr {
+    @apply my-4 aspect-square w-full max-w-[20rem] bg-white;
+  }
+  .poster-address {
+    @apply mt-4 w-full break-words text-xs font-bold;
+  }
+  .kiosk-receipt {
+    @apply rounded-xl border border-slate-300 bg-white p-5 text-center text-black;
+    page: kiosk-receipt;
+  }
+  .receipt-qr {
+    @apply mx-auto my-4 aspect-square w-full max-w-48 bg-white;
+  }
+
+  .landing-width {
+    @apply mx-auto w-full max-w-[1240px] px-4 sm:px-8 lg:px-10;
+  }
+  .landing-hero {
+    @apply grid items-end gap-7 py-12 sm:gap-10 sm:py-16 lg:grid-cols-[minmax(0,1fr)_16rem] lg:py-20;
+  }
+  .landing-hero h1 {
+    @apply max-w-[17ch] text-[clamp(2.65rem,6.2vw,5.6rem)] leading-[1.03] font-extrabold -tracking-[.04em] text-balance;
+  }
+  .landing-summary {
+    @apply mt-5 max-w-[53ch] text-[clamp(1rem,1.75vw,1.2rem)] leading-relaxed text-muted;
+  }
+  .landing-context {
+    @apply max-w-sm border-t border-slate-300 pt-4 lg:pb-2;
+  }
+  .landing-preview {
+    @apply rounded-2xl border border-slate-200 bg-white p-4 sm:p-6;
+  }
+  .preview-grid {
+    @apply grid items-stretch gap-3 lg:grid-cols-[minmax(0,1.24fr)_minmax(0,1fr)_minmax(0,.75fr)];
+  }
+  .preview-staff,
+  .preview-tv,
+  .preview-visitor {
+    @apply overflow-hidden rounded-xl border border-slate-200 bg-slate-50;
+  }
+  .preview-tv {
+    @apply border-slate-800 text-slate-100;
+    background: #0b1120;
+  }
+  .preview-card-header {
+    @apply flex items-center gap-2 border-b border-slate-200 px-3 py-2.5 text-xs font-extrabold;
+  }
+  .preview-card-header svg {
+    @apply size-3.5 shrink-0;
+  }
+  .preview-tv .preview-card-header {
+    @apply border-slate-800;
+  }
+  .preview-staff-body {
+    @apply grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-3 p-3;
+  }
+  .preview-active {
+    @apply grid min-h-32 content-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5;
+  }
+  .preview-active p:last-child {
+    font-size: clamp(1.75rem, 4vw, 3rem);
+  }
+  .preview-tv-body {
+    @apply grid min-h-37 content-between gap-3 px-4 py-3;
+  }
+  .preview-visitor-body {
+    @apply grid min-h-37 content-center justify-items-start gap-2 px-4 py-3;
+  }
+  .feature-grid {
+    @apply grid overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-4;
+    gap: 1px;
+  }
+  .feature-grid article {
+    @apply bg-white p-5 sm:p-6;
+  }
+  @media (min-width: 1024px) {
+    .feature-grid article:nth-child(1),
+    .feature-grid article:nth-child(6) {
+      grid-column: span 2;
+    }
+  }
+}
+
+@page venue-poster {
+  size: A4 portrait;
+  margin: 12mm;
+}
+@page kiosk-receipt {
+  size: auto;
+  margin: 0;
+}
+@media print {
+  .no-print,
+  body > a {
+    display: none !important;
+  }
+  body:has(.qr-poster),
+  body:has(.kiosk-receipt) {
+    margin: 0;
+    min-height: 0;
+    background: white;
+    color: black;
+  }
+  .poster-shell,
+  .visitor-shell,
+  .visitor-content {
+    width: auto;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+  }
+  .qr-poster {
+    margin: 0;
+    padding: 8mm;
+    min-height: 245mm;
+    border: 0;
+    border-radius: 0;
+    break-inside: avoid;
+  }
+  .poster-qr {
+    width: 104mm;
+    max-width: 100%;
+    margin-block: 8mm;
+  }
+  .kiosk-receipt {
+    max-width: 52mm;
+    margin: 0 auto;
+    padding: 2mm;
+    border: 0;
+    border-radius: 0;
+    break-inside: avoid;
+  }
+  .kiosk-receipt[data-paper="80"] {
+    max-width: 74mm;
+  }
+  .kiosk-receipt .visitor-token {
+    font-size: 26pt;
+    margin-block: 4mm;
+  }
+  .kiosk-receipt .receipt-qr {
+    width: 33mm;
+    max-width: 100%;
+    margin-block: 3mm;
+  }
+}

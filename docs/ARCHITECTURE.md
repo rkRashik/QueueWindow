@@ -20,6 +20,7 @@ The HTTP-only `qw_session` cookie carries a signed 24-hour JWT. Next.js Proxy re
 
 | Method and path | Behavior |
 | --- | --- |
+| `POST /api/auth/demo` | Create or reuse the shared demo and establish a scoped session. |
 | `GET, POST /api/admin/counters` | List or create counters. Prefixes are one or two uppercase letters or digits and unique within the organization. |
 | `PATCH, DELETE /api/admin/counters/[id]` | Edit name, prefix, or status, or delete a counter. |
 | `GET, POST /api/admin/staff` and `DELETE /api/admin/staff/[id]` | List, create, or remove staff. Owner accounts are protected. |
@@ -36,4 +37,6 @@ Public display data contains ticket numbers and excludes private ticket IDs. Pub
 
 The stream polls an indexed PostgreSQL snapshot every two seconds without holding a transaction open. It closes after 25 seconds and sends `retry: 2000` for automatic reconnection.
 
-Phase 3A adds the staff desk, owner administration, and auth screens. The desk refreshes its authenticated snapshot on SSE events and polls while visible as a fallback. The public TV, visitor, and landing screens are planned for Phase 3B. The original single-counter release is available in Git history.
+The desk refreshes its authenticated snapshot on SSE events and polls while visible as a fallback. Public screens use the same stream. The visitor ticket page reads its current state from the ticket API. The desk and admin link to the venue QR sign, and the kiosk prints a receipt with a private tracking QR.
+
+The demo endpoint provisions demo-clinic under a PostgreSQL transaction lock with synthetic owner credentials. Demo admin settings are read-only and demo counters can issue up to 200 tickets per business day. The demo queue is shared among its visitors. The original single-counter release is available in Git history.
