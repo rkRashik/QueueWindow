@@ -10,8 +10,6 @@ playwright-report/
 .artifacts/
 
 *.log
-.impeccable/config.local.json
-.impeccable/hook.cache.json
 
 .vscode/
 next-env.d.ts

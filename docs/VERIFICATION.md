@@ -1,5 +1,13 @@
 # Verification
 
+## SaaS Phase 1 (19 November 2026)
+
+- Drizzle Kit applied the four-table schema to the configured Neon database.
+- Typecheck, ESLint, seven Vitest tests, and the production build passed. Next.js emitted a deprecation warning for the requested middleware file convention.
+- Six Chromium tests passed against the production build. They covered route protection, foreign Origin rejection, keyboard operation, accessible form names, sampled axe checks, mobile and desktop reflow, simulated 200% zoom, and form sign-out. Native screen readers remain untested.
+- A live Neon smoke test passed simultaneous duplicate signup and rollback, the trial and default counter, cookie flags, browser signup and sign-out, owner and email-free staff access, email and username login, and PostgreSQL rejection of a cross-tenant ticket. Both synthetic organizations were removed.
+
+
 ## English frontend rebuild - 19 November 2026
 
 - TypeScript check and ESLint passed.

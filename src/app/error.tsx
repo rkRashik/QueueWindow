@@ -1,26 +1,16 @@
-﻿"use client";
-import { useRouter } from "next/navigation";
-import { Header, State } from "@/features/workspace/ui";
+"use client";
 
 export default function ErrorPage({ reset }: { reset: () => void }) {
-  const router = useRouter();
   return (
-    <>
-      <Header />
-      <State
-        title="Something went wrong"
-        detail="Please try loading this page again."
+    <main id="main" className="mx-auto max-w-lg px-6 py-20">
+      <h1 className="text-3xl font-bold">Something went wrong</h1>
+      <button
+        type="button"
+        className="mt-5 min-h-11 rounded-md bg-brand px-4 font-semibold text-white"
+        onClick={reset}
       >
-        <button
-          className="button"
-          onClick={() => {
-            reset();
-            router.refresh();
-          }}
-        >
-          Try again
-        </button>
-      </State>
-    </>
+        Try again
+      </button>
+    </main>
   );
 }

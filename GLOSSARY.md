@@ -1,19 +1,13 @@
-# QueueWindow
+# QueueWindow glossary
 
-A single service desk and the people waiting for their turns.
+**Organization**. The tenant that owns its users, counters, and tickets. The authentication screens call it a workspace.
 
-## Language
+**Owner**. A user who can access organization administration. Signup creates the first owner and requires an email address.
 
-**Queue**: The ordered collection of tickets belonging to one workspace.
+**Staff**. A user who can access the service desk. An email address is optional.
 
-**Ticket**: One visitor?s place in line. Its number is an identifier, not a private access credential.
+**Counter**. A service point belonging to one organization. Signup creates Counter 1 with prefix A.
 
-**Called**: The visitor has been invited to approach the desk.
+**Ticket**. A visitor's place in a counter's queue. The Phase 1 database supports waiting, called, served, and skipped tickets.
 
-**Serving**: The visitor is currently receiving service.
-
-**Absent**: A called visitor did not approach; their ticket is finished.
-
-**People ahead**: Earlier waiting tickets plus the called or serving ticket, excluding the visitor?s own ticket.
-
-**Public display**: A shared screen showing ticket numbers and progress, without private links.
+**Public display**. A shared screen for ticket numbers and progress, planned for a later phase.

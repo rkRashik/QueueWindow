@@ -1,4 +1,5 @@
-﻿import { Staff } from "@/features/workspace/staff";
-export default function Page() {
-  return <Staff />;
+import { WorkspaceAccess } from "@/features/auth/workspace-access";
+
+export default function DeskPage() {
+  return <WorkspaceAccess />;
 }

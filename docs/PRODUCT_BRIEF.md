@@ -1,5 +1,7 @@
 # Product brief
 
+Phase 1 on the SaaS rebuild branch replaces the v1 application runtime with the Neon schema and organization authentication. See [Phase 1 architecture](ARCHITECTURE.md) for current behavior.
+
 QueueWindow makes waiting understandable: staff manage a single FIFO queue, visitors check private tickets, and a public display keeps the room informed.
 
 The initial product is a fully functional portfolio app with a $0 hosting target, Bangladesh context, English staff controls with Bangla and English visitor and display surfaces, and approximately 100 tickets per day. No visitor names, phone numbers, medical details, or other sensitive information are collected.

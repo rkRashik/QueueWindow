@@ -1,34 +1,19 @@
-# Architecture
+# Phase 1 architecture
 
-## Decision
+QueueWindow uses one Next.js App Router application, TypeScript, Tailwind CSS, and Drizzle ORM. The server uses a Neon WebSocket Pool so signup can run an interactive PostgreSQL transaction. The schema is defined in `src/db/schema.ts` with a baseline in `drizzle/`.
 
-One Next.js 16 application, React, TypeScript, CSS, and libSQL. Local development uses a persistent SQLite file; Vercel must use a remote Turso database. The server refuses file-based production storage on Vercel. This replaces the earlier Supabase/realtime proposal: five-second polling is sufficient for one desk and avoids an additional authentication/realtime system.
+## Tenant data
 
-## Data and consistency
+Each user, counter, and ticket belongs to an organization. PostgreSQL rejects a ticket whose organization differs from its counter's organization. Deleting an organization cascades through its users, counters, and tickets. Ticket lookup indexes support tenant status and counter history queries.
 
-Tables: queues, tickets, commands, sessions, rate_limits, and events. Queue ownership comes from the server-side session, never a client-supplied queue ID. Ticket numbers are unique within each queue; a partial unique index permits only one called or serving ticket. Write transactions include number allocation, lifecycle validation, version increments, audit events, and idempotency records. Stale versions return a conflict. A process-local write scheduler avoids synchronous SQLite lock contention; database transactions and constraints remain the cross-instance boundary. Remote Turso concurrency still needs a deployment smoke test.
+Usernames and emails are globally unique and stored in lowercase. Usernames cannot contain an at-sign, so sign-in selects an unambiguous lookup. Owners require email. Staff may use a username alone.
 
-Read transactions keep tickets and versions consistent. Browser snapshots cannot overwrite a newer version. Lost mutation responses retain the same command key for a safe retry. Local concurrency and reopening tests use actual SQLite files.
+## Authentication
 
-## Security
+Signup creates an organization, an owner, and Counter 1 in one transaction. The trial expiry is 14 days after signup. Slugs combine a normalized organization name with a random UUID and have a unique database constraint. Passwords use bcrypt with cost 12. Input is capped at bcrypt's 72-byte boundary.
 
-One owner password is stored as a salted scrypt hash in server configuration. Random, hashed session tokens are stored in the database; cookies are HttpOnly, SameSite=Lax, and Secure in production. Sessions expire after 24 hours. Server checks protect every staff operation. Writes require the correct Origin. Login and writes have database-backed rate limits.
+The HTTP-only `qw_session` cookie carries a signed 24-hour HS256 JWT with SameSite=Lax and Secure in production. Middleware redirects unauthenticated desk and admin requests. Server rendering and `/api/auth/me` verify the user and organization together against PostgreSQL. The admin page checks the current database role. Auth POSTs require the expected Origin. Error responses carry a request ID and omit credentials, tokens, and database errors.
 
-Visitor capabilities are HMAC-SHA256 values derived from a random ticket UUID and APP_SECRET. Only hashes are indexed in storage. The raw capability travels in a URL fragment and Authorization header, not a query string. Links expire after 24 hours and are invalidated when tickets are cleared. Anyone holding a link can view that ticket. No individual-link rotation UI is included.
+## Phase boundary
 
-Public display IDs intentionally grant read-only access to ticket numbers, desk details, and aggregate progress. They expose no private ticket IDs or visitor tokens. All dynamic API responses are no-store. Security headers restrict framing, referrers, and resource origins. CSP allows inline scripts for Next.js hydration; nonce-based CSP is a future hardening option.
-
-## Limits
-
-Five-second visible-page polling is not instantaneous delivery. Demo queues expire after a day and are cleaned on later demo creation; cleanup is lazy. A session is capped at 500 tickets. Owner history remains until starting a new day; audit and command retention need an operational cleanup policy before real use. Single shared owner credentials intentionally omit invitations, password recovery, and role management. Hosted credentials and deployment are not verified locally.
-
-## Counter timing and preferences
-
-The queue snapshot reads call, recall and service-start times from ticket events. Older active tickets without a matching call event show no call timer until called again. Display and print preferences use a queue-owned record with defaults for existing queues. Preference changes and repeat calls use the same versioned transactions as other staff actions.
-
-
-## Public admission
-
-The public join route uses the same random venue identifier as the read-only display. Self-service is off by default. Once staff enable it, anyone with the venue link can request a ticket. Public admission accepts only a request key. It has separate admission limits per venue and client, checks pause and self-service settings inside the write transaction, and uses the same FIFO allocation as staff. Public idempotency keys have their own namespace and return only the ticket number and private visitor token. Visitor tokens never appear in the public display payload.
-
-The phone and kiosk use the same endpoint. A pending request key can survive a reload in the same tab. The shared kiosk clears a completed result on Done or after a timeout. It prints through the browser and relies on the device printer configuration. A venue must supply a reachable HTTPS origin for QR use outside the kiosk device.
+Phase 1 establishes tenant ownership, auth, and schema. Enforcing trial expiry, public auth rate limiting, account recovery, session revocation, staff account management, queue operations, and the dashboard and TV surfaces remain future work. Any future data access must scope queries by the server-verified organization ID. The v1 queue sources and tests are retained in `legacy/v1` for reference and the complete v1 release is in Git history.

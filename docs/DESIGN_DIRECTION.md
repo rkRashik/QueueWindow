@@ -1,5 +1,7 @@
 # Design direction
 
+Phase 1 on the SaaS rebuild branch replaces the v1 application runtime with the Neon schema and organization authentication. See [Phase 1 architecture](ARCHITECTURE.md) for current behavior.
+
 The staff desk pairs a waiting list with a focused active-ticket surface. Mobile keeps the primary action within reach at the bottom of the screen. The action names the actual next ticket, and optional elapsed time comes from server events.
 
 The public display has Midnight, Paper, River, Clay, and Plum themes. Its ticket number, destination, and optionally visible upcoming tickets support viewing at a distance. Repeat calls replay the number reveal. Sound requires both the saved preference and a local opt-in on the display.

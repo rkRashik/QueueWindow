@@ -1,5 +1,7 @@
 # Implementation record
 
+Phase 1 on the SaaS rebuild branch replaces the v1 application runtime with the Neon schema and organization authentication. See [Phase 1 architecture](ARCHITECTURE.md) for current behavior.
+
 The latest brief authorizes local implementation and independent art direction. Paid resources, GitHub pushes, and deployment remain separate approval steps.
 
 ## Delivered locally

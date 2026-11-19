@@ -1,4 +1,5 @@
-﻿import { Landing } from "@/features/workspace/entry";
-export default function Page() {
-  return <Landing />;
+import { redirect } from "next/navigation";
+
+export default function Home() {
+  redirect("/desk");
 }

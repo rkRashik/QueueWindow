@@ -69,7 +69,7 @@ export function database(): Promise<Client> {
         throw new Error("Vercel requires a remote Turso database.");
       if (!url) mkdirSync("data", { recursive: true });
       const db = createClient({
-        url: url || "file:data/queuewindow.db",
+        url: url || "file:legacy-queue.db",
         authToken: process.env.TURSO_AUTH_TOKEN,
         timeout: 1,
       });
