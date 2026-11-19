@@ -556,3 +556,170 @@
     width: 30mm;
   }
 }
+
+/* ── Step cue and tappable counter cards (join + kiosk) ───────────── */
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 14px 0 18px;
+  color: var(--fg-3);
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+.steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.steps li + li::before {
+  content: "";
+  width: 1.5rem;
+  height: 1px;
+  margin-inline-end: 2px;
+  background: var(--line-2);
+}
+.steps-n {
+  display: inline-grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font-sign);
+  font-size: 0.875rem;
+  line-height: 1;
+}
+.steps [aria-current="step"] {
+  color: var(--fg);
+}
+.steps [aria-current="step"] .steps-n {
+  border-color: var(--fg);
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.counter-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+  border-top: 0;
+}
+.counter-choice {
+  min-height: 5.75rem;
+  gap: 14px;
+  padding: 14px 14px 14px 12px;
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+  border-radius: 10px;
+  background: var(--raise);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    transform 90ms var(--ease-out);
+}
+@media (hover: hover) {
+  .counter-choice:hover:not(:disabled) {
+    border-color: var(--fg-3);
+    background: var(--raise);
+  }
+}
+.counter-choice:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+  border-bottom-width: 1px;
+  margin-top: 1px;
+  background: var(--bg-2);
+}
+.counter-choice:disabled:not([aria-busy="true"]) {
+  background: var(--bg-2);
+  border-style: dashed;
+  border-bottom-width: 1px;
+}
+.counter-choice:disabled:not([aria-busy="true"]) .counter-choice-name {
+  color: var(--fg-2);
+}
+.counter-choice-action {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  min-height: 2.75rem;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--fg);
+  color: var(--bg);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+}
+.counter-choice-action svg {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 160ms var(--ease-out);
+}
+@media (hover: hover) {
+  .counter-choice:hover:not(:disabled) .counter-choice-action svg {
+    transform: translateX(3px);
+  }
+}
+.counter-choice-action[data-open="false"] {
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--fg-3);
+}
+.counter-choice-action .dual {
+  gap: 0;
+  line-height: 1.1;
+}
+@media (max-width: 379px) {
+  .counter-choice {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .counter-choice-action {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+}
+
+/* Kiosk: arm's-length targets and a firmer press. */
+.visitor[data-wide="true"] .steps {
+  margin: 18px 0 24px;
+  font-size: 1.25rem;
+}
+.visitor[data-wide="true"] .steps-n {
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.125rem;
+}
+.visitor[data-wide="true"] .counter-list {
+  gap: 14px;
+}
+.visitor[data-wide="true"] .counter-choice {
+  min-height: 8rem;
+  padding: 20px 22px 20px 18px;
+  border-radius: 14px;
+}
+.visitor[data-wide="true"] .counter-choice-action {
+  min-height: 4rem;
+  padding: 0 26px;
+  font-size: 1.375rem;
+}
+.visitor[data-wide="true"] .counter-choice-action svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+.visitor[data-wide="true"] .counter-choice:active:not(:disabled) {
+  transform: translateY(2px) scale(0.985);
+}
+.visitor[data-wide="true"] .receipt {
+  width: min(100%, 30rem);
+  padding: 28px 24px;
+  border-radius: 14px;
+}
+.visitor[data-wide="true"] .receipt-token {
+  font-size: 7.5rem;
+}
+.visitor:not([data-wide="true"]) .counter-choice-plate {
+  font-size: 2rem;
+}

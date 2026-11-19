@@ -61,7 +61,7 @@
   letter-spacing: -0.015em;
 }
 .landing-lede {
-  max-width: 26ch;
+  max-width: 36ch;
   margin: 20px 0 28px;
   color: var(--fg-2);
   font-size: clamp(1.125rem, 1.6vw, 1.375rem);

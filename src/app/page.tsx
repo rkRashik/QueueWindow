@@ -37,7 +37,10 @@ export default function Home() {
               <br />
               Every screen.
             </h1>
-            <p className="landing-lede">Call from the desk. The board and every phone follow.</p>
+            <p className="landing-lede">
+              Digital queue and live token display for clinics, banks and service desks. Call
+              from the desk, every screen follows.
+            </p>
             <DemoButton />
             <p className="landing-note">A shared demo clinic. No sign-up.</p>
           </div>

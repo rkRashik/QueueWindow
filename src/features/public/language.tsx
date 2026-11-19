@@ -68,6 +68,10 @@ const en = {
   youreNext: "You’re next",
   tapCounter: "Tap a counter to take a ticket.",
   goTo: "Go to",
+  stepSelect: "Select counter",
+  stepToken: "Get your token",
+  takeTicket: "Take ticket",
+  pausedShort: "Not taking tickets right now",
 };
 
 const bn: typeof en = {
@@ -134,6 +138,10 @@ const bn: typeof en = {
   youreNext: "এরপর আপনি",
   tapCounter: "টিকিট নিতে একটি কাউন্টারে চাপুন।",
   goTo: "যান",
+  stepSelect: "কাউন্টার বাছুন",
+  stepToken: "টোকেন নিন",
+  takeTicket: "টোকেন নিন",
+  pausedShort: "এখন টিকিট দেওয়া হচ্ছে না",
 };
 
 const words = { bn, en };

@@ -12,7 +12,7 @@ export function AccessPage({ mode }: { mode: "login" | "signup" }) {
           {signup ? "Log in" : "Create workspace"}
         </Link>
       </header>
-      <main id="main" className="access-body">
+      <main id="main" className="access-body" data-mode={mode}>
         <h1 id="access-title" className="sign text-[2.25rem] leading-none font-bold">
           {signup ? "Create your workspace" : "Log in"}
         </h1>

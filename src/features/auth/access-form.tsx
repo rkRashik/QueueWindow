@@ -74,7 +74,8 @@ export function AccessForm({ mode }: { mode: "login" | "signup" }) {
       action={endpoint}
       method="post"
       noValidate
-      className="mt-7 grid gap-4"
+      className="access-form mt-6 grid gap-x-4 gap-y-3.5"
+      data-mode={mode}
       onSubmit={submit}
     >
       {signup ? (

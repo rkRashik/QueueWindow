@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Printer } from "lucide-react";
+import { ArrowRight, Printer } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Plate } from "@/components/plate";
@@ -57,12 +57,8 @@ function clearKey(slot: string, remembered: Map<string, string>) {
 
 /** One honest line per counter: never "No wait" next to a minute count. */
 function WaitLine({ counter }: { counter: PublicCounter }) {
-  if (counter.status !== "OPEN")
-    return (
-      <span className="state" data-state="PAUSED">
-        <Tx k="closed" />
-      </span>
-    );
+  // A paused counter says "Closed" once, on its action pill.
+  if (counter.status !== "OPEN") return <Tx k="pausedShort" />;
   const minutes = counter.estimatedWaitMinutes;
   const ahead = counter.waitingCount;
   if (minutes === 0)
@@ -227,9 +223,16 @@ function Arrival({
           <h1 className="sign visitor-title">
             <Tx k="choose" />
           </h1>
-          <p className="visitor-lede">
-            <Tx k="tapCounter" />
-          </p>
+          <ol className="steps" aria-label={t.tapCounter}>
+            <li aria-current="step">
+              <span className="steps-n">1</span>
+              <Tx k="stepSelect" />
+            </li>
+            <li>
+              <span className="steps-n">2</span>
+              <Tx k="stepToken" />
+            </li>
+          </ol>
           {reconnecting && (
             <ConnectionNote>
               {t.offline} {data && t.offlineDetail}
@@ -275,7 +278,16 @@ function Arrival({
                         {pending === counter.id ? <Tx k="pending" /> : <WaitLine counter={counter} />}
                       </span>
                     </span>
-                    {open && <ChevronRight aria-hidden="true" className="counter-choice-go" />}
+                    <span className="counter-choice-action" data-open={open} aria-hidden="true">
+                      {open ? (
+                        <>
+                          <Tx k="takeTicket" />
+                          <ArrowRight />
+                        </>
+                      ) : (
+                        <Tx k="closed" />
+                      )}
+                    </span>
                   </button>
                 </li>
               );

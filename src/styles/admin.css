@@ -290,3 +290,25 @@
   margin-inline: auto;
   padding: 24px 16px 64px;
 }
+
+/* Signup fits a 1366x768 laptop (about 650px of viewport) without scrolling. */
+.access-body[data-mode="signup"] {
+  width: min(100%, 40rem);
+  padding-top: 8px;
+  padding-bottom: 24px;
+}
+.access-body[data-mode="signup"] .muted.mt-6 {
+  margin-top: 16px;
+  padding-top: 12px;
+}
+@media (min-width: 640px) {
+  .access-form[data-mode="signup"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .access-form[data-mode="signup"] > :first-child,
+  .access-form[data-mode="signup"] > :last-child,
+  .access-form[data-mode="signup"] > [role="alert"] {
+    grid-column: 1 / -1;
+  }
+}

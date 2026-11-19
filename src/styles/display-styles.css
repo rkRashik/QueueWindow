@@ -1,0 +1,343 @@
+/* Alternate TV layouts. Same tokens, plates and lamp as the board. */
+.board-stage {
+  display: grid;
+  min-height: 0;
+}
+.board-stage > * {
+  min-height: 0;
+}
+
+/* Shared next-up list. */
+.next-list {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  color: var(--fg-2);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+.next-list > :first-child {
+  color: var(--fg);
+}
+.next-more {
+  color: var(--fg-3);
+  font-size: 0.75em;
+}
+.next-empty {
+  color: var(--fg-3);
+  font-family: var(--font-sign);
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+/* ── Spotlight: 58 / 42 stage and stack ───────────────────────────── */
+.spot {
+  display: grid;
+  grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
+  gap: clamp(16px, 2.4vw, 48px);
+  padding-bottom: 1vh;
+}
+.spot-stage {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  align-content: center;
+  justify-items: start;
+  gap: 2.4vh;
+  padding: 4vh 3.4vw;
+  border-radius: 10px;
+  background: var(--bg-2);
+  container-type: inline-size;
+  isolation: isolate;
+  transition: color 420ms ease;
+}
+.spot-stage > :not(.board-lamp) {
+  position: relative;
+  z-index: 1;
+}
+.spot-stage .board-lamp {
+  inset: 0;
+  border-radius: 10px;
+}
+.spot-stage[data-calling],
+.spot-item[data-calling] {
+  --fg: var(--signal-ink);
+  --fg-2: oklch(22% 0.02 255 / 0.74);
+  --fg-3: oklch(22% 0.02 255 / 0.62);
+  color: var(--signal-ink);
+}
+.spot-label {
+  font-size: clamp(0.9rem, 2.1vh, 1.6rem);
+}
+.spot-stage[data-calling] .spot-label {
+  color: var(--fg-2);
+}
+.spot-token {
+  font-size: min(33cqw, 42vh);
+  font-weight: 700;
+  line-height: 0.88;
+}
+.spot-where {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  font-family: var(--font-sign);
+  font-size: min(5.6cqw, 5.6vh);
+  font-weight: 600;
+  line-height: 1.05;
+}
+.spot-where .plate {
+  font-size: 1.3em;
+}
+.spot-idle {
+  font-size: min(6cqw, 5.5vh);
+}
+.spot-stack {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: repeat(var(--n), minmax(0, 1fr));
+  border-top: 1px solid var(--line-2);
+}
+.spot-item {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "plate name token"
+    "plate next token";
+  align-content: center;
+  column-gap: clamp(10px, 1.2vw, 24px);
+  row-gap: 0.5cqh;
+  padding: 0 0.8vw;
+  border-bottom: 1px solid var(--line);
+  border-radius: 6px;
+  container-type: size;
+  transition:
+    background-color 420ms ease,
+    color 420ms ease;
+}
+.spot-item[data-calling] {
+  background: var(--signal);
+}
+.spot-item .plate {
+  grid-area: plate;
+  font-size: min(46cqh, 9cqw);
+}
+.spot-item[data-open="false"] .plate {
+  opacity: 0.38;
+}
+.spot-item-name {
+  grid-area: name;
+  align-self: end;
+  overflow: hidden;
+  font-family: var(--font-sign);
+  font-size: min(20cqh, 6cqw);
+  font-weight: 600;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spot-item-next {
+  grid-area: next;
+  align-self: start;
+  min-width: 0;
+  overflow: hidden;
+  font-size: min(15cqh, 4.6cqw);
+}
+.spot-item-token {
+  grid-area: token;
+  font-size: min(42cqh, 11cqw);
+  font-weight: 700;
+  line-height: 1;
+}
+.spot-item-token .board-idle {
+  font-size: min(13cqh, 4.2cqw);
+}
+@media (max-aspect-ratio: 1 / 1) {
+  .spot {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 45fr) minmax(0, 55fr);
+  }
+}
+
+/* ── Kinetic: lobby cards, light wash, motion ─────────────────────── */
+.kin {
+  --wash-mix: 34%;
+  position: relative;
+  display: grid;
+  min-height: 0;
+  padding-bottom: 1vh;
+}
+.board:not(.surface-dark) .kin,
+html[data-tv="light"] .kin {
+  --wash-mix: 18%;
+}
+.kin-wash {
+  position: absolute;
+  inset: -24vh -12vw;
+  z-index: 0;
+  background: radial-gradient(
+    55% 50% at 32% 42%,
+    color-mix(in oklch, var(--wash) var(--wash-mix), transparent),
+    transparent 72%
+  );
+  pointer-events: none;
+  animation: breathe 7s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+@keyframes breathe {
+  from {
+    opacity: 0.55;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(4vw, -3vh, 0) scale(1.14);
+  }
+}
+.kin-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(var(--kcols), minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: clamp(12px, 1.6vw, 28px);
+  padding-top: 0.5vh;
+}
+.kin-card {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 2cqh;
+  padding: 5cqh 5cqw;
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  background: color-mix(in oklch, var(--raise) 86%, transparent);
+  container-type: size;
+  animation: card-in 640ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+  transition:
+    border-color 420ms ease,
+    transform 420ms var(--ease-out);
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0) scale(0.97);
+  }
+}
+.kin-card[data-calling] {
+  border-color: var(--signal);
+  transform: translate3d(0, -4px, 0);
+}
+.kin-card[data-open="false"] {
+  opacity: 0.55;
+}
+.kin-card > :not(.kin-pulse) {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+.kin-pulse {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--plate);
+  opacity: 0;
+  animation: kin-pulse 1.4s ease-out 4;
+}
+@keyframes kin-pulse {
+  0% {
+    opacity: 0.32;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.kin-head {
+  display: flex;
+  align-items: center;
+  gap: 4cqw;
+}
+.kin-head .plate {
+  font-size: min(13cqh, 14cqw);
+}
+.kin-name {
+  flex: 1;
+  overflow: hidden;
+  font-family: var(--font-sign);
+  font-size: min(9cqh, 8.5cqw);
+  font-weight: 600;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kin-live {
+  display: inline-flex;
+  height: 1.1em;
+  align-items: flex-end;
+  gap: 0.12em;
+  font-size: min(9cqh, 7cqw);
+}
+.kin-live i {
+  width: 0.16em;
+  height: 100%;
+  border-radius: 1px;
+  background: var(--signal);
+  transform-origin: bottom;
+  animation: wave 900ms ease-in-out infinite;
+}
+.kin-live i:nth-child(2) {
+  animation-delay: 150ms;
+}
+.kin-live i:nth-child(3) {
+  animation-delay: 300ms;
+}
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.kin-token {
+  display: grid;
+  align-items: center;
+  font-size: min(38cqh, 31cqw);
+  font-weight: 700;
+  line-height: 0.9;
+}
+.kin-token .board-idle {
+  font-size: min(9cqh, 7cqw);
+}
+.kin-reveal {
+  display: inline-block;
+  animation: reveal 560ms var(--ease-snap) both;
+}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8%, 0) scale(0.8);
+  }
+}
+.kin-next {
+  display: flex;
+  align-items: baseline;
+  gap: 3cqw;
+  overflow: hidden;
+  font-size: min(7.5cqh, 6cqw);
+}
+.kin-next-label {
+  flex-shrink: 0;
+  color: var(--fg-3);
+  font-family: var(--font-sign);
+  font-size: 0.8em;
+  font-weight: 600;
+}

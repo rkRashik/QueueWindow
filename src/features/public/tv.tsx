@@ -9,6 +9,9 @@ import {
   Sun,
   Volume2,
   VolumeX,
+  Rows3,
+  PanelLeft,
+  LayoutGrid,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Drum } from "@/components/drum";
@@ -24,6 +27,8 @@ import { usePublicFeed, type DisplayData, type PublicCounter } from "./live";
 import { VenueMark } from "./ui";
 
 type Theme = "light" | "dark";
+export type DisplayStyle = "board" | "spotlight" | "kinetic";
+export const displayStyles = ["board", "spotlight", "kinetic"] as const;
 const themes = ["light", "dark"] as const;
 const callSeconds = 8;
 
@@ -184,6 +189,172 @@ export function Board({
   );
 }
 
+/** The counter whose ticket was called most recently. */
+function latestCall(counters: PublicCounter[]) {
+  return counters
+    .filter((counter) => counter.calledTicket)
+    .sort((a, b) =>
+      (b.calledTicket!.calledAt ?? "").localeCompare(a.calledTicket!.calledAt ?? ""),
+    )[0];
+}
+
+function NextList({ counter }: { counter: PublicCounter }) {
+  const { language } = usePublicLocale();
+  if (counter.status !== "OPEN") return null;
+  if (!counter.waitingTokens.length)
+    return (
+      <span className="next-empty">
+        <Tx k="queueClear" />
+      </span>
+    );
+  const more = counter.waitingCount - counter.waitingTokens.length;
+  return (
+    <span className="next-list sign">
+      {counter.waitingTokens.map((item) => (
+        <span key={item} translate="no">
+          {item}
+        </span>
+      ))}
+      {more > 0 && <span className="next-more">+{formatNumber(more, language)}</span>}
+    </span>
+  );
+}
+
+function Idle({ counter }: { counter: PublicCounter }) {
+  return (
+    <span className="board-idle">
+      {counter.status === "OPEN" ? <Tx k="ready" /> : <Tx k="closed" />}
+    </span>
+  );
+}
+
+type StyleProps = {
+  counters: PublicCounter[];
+  calling: ReadonlyMap<string, string>;
+  label: string;
+};
+
+/** Spotlight: the latest call on a large stage, every counter stacked beside it. */
+function Spotlight({ counters, calling, label }: StyleProps) {
+  const hero = latestCall(counters);
+  const lamp = hero && calling.get(hero.id);
+  return (
+    <div className="spot">
+      <section
+        className="spot-stage"
+        data-calling={lamp ? "true" : undefined}
+        style={hero ? counterVars(getCounterTheme(hero.prefix)) : undefined}
+        aria-label={label}
+      >
+        {lamp && <span key={lamp} className="board-lamp" aria-hidden="true" />}
+        <p className="caps spot-label">
+          <Tx k="nowCalling" inline />
+        </p>
+        {hero ? (
+          <>
+            <Drum value={hero.calledTicket!.tokenNumber} className="sign spot-token" />
+            <p className="spot-where">
+              <Plate prefix={hero.prefix} />
+              <span>{hero.name}</span>
+            </p>
+          </>
+        ) : (
+          <p className="board-idle spot-idle">
+            <Tx k="nothingYet" />
+          </p>
+        )}
+      </section>
+      <ul className="spot-stack" style={{ "--n": counters.length } as CSSProperties}>
+        {counters.map((counter) => (
+          <li
+            key={counter.id}
+            className="spot-item"
+            data-open={counter.status === "OPEN"}
+            data-calling={calling.get(counter.id) ? "true" : undefined}
+            style={counterVars(getCounterTheme(counter.prefix))}
+          >
+            <Plate prefix={counter.prefix} />
+            <span className="spot-item-name">{counter.name}</span>
+            <span className="spot-item-token">
+              {counter.calledTicket ? (
+                <Drum value={counter.calledTicket.tokenNumber} className="sign" />
+              ) : (
+                <Idle counter={counter} />
+              )}
+            </span>
+            <span className="spot-item-next">
+              <NextList counter={counter} />
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Kinetic: lobby cards under a slow light wash in the calling counter's colour. */
+function Kinetic({ counters, calling, label }: StyleProps) {
+  const hero = latestCall(counters);
+  const columns = counters.length <= 3 ? counters.length : counters.length === 4 ? 2 : 3;
+  return (
+    <div
+      className="kin"
+      style={
+        {
+          "--wash": hero ? getCounterTheme(hero.prefix).plate : "transparent",
+          "--kcols": Math.max(columns, 1),
+        } as CSSProperties
+      }
+    >
+      <span key={hero?.prefix} className="kin-wash" aria-hidden="true" />
+      <ul className="kin-grid" aria-label={label}>
+        {counters.map((counter, index) => {
+          const lamp = calling.get(counter.id);
+          return (
+            <li
+              key={counter.id}
+              className="kin-card"
+              data-open={counter.status === "OPEN"}
+              data-calling={lamp ? "true" : undefined}
+              style={
+                { ...counterVars(getCounterTheme(counter.prefix)), "--i": index } as CSSProperties
+              }
+            >
+              {lamp && <span key={lamp} className="kin-pulse" aria-hidden="true" />}
+              <div className="kin-head">
+                <Plate prefix={counter.prefix} />
+                <span className="kin-name">{counter.name}</span>
+                {lamp && (
+                  <span className="kin-live" aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                )}
+              </div>
+              <div className="kin-token">
+                {counter.calledTicket ? (
+                  <span key={counter.calledTicket.tokenNumber} className="kin-reveal">
+                    <Drum value={counter.calledTicket.tokenNumber} className="sign" />
+                  </span>
+                ) : (
+                  <Idle counter={counter} />
+                )}
+              </div>
+              <div className="kin-next">
+                <span className="kin-next-label">
+                  <Tx k="upNext" />
+                </span>
+                <NextList counter={counter} />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function Control({
   label,
   pressed,
@@ -209,9 +380,19 @@ function Control({
   );
 }
 
-function Tv({ slug, initial }: { slug: string; initial: DisplayData | null }) {
+type TvProps = { slug: string; initial: DisplayData | null; forcedStyle?: DisplayStyle };
+
+function Tv({ slug, initial, forcedStyle }: TvProps) {
   const { language, t } = usePublicLocale();
   const [theme, setTheme] = useStoredChoice<Theme>("qw-tv-theme", "dark", themes);
+  const [storedStyle, setStyle] = useStoredChoice<DisplayStyle>(
+    "qw-tv-style",
+    "board",
+    displayStyles,
+  );
+  // ?style= wins until someone picks a style on the screen itself.
+  const [override, setOverride] = useState(forcedStyle);
+  const style = override ?? storedStyle;
   const fullscreen = useFullscreen();
   const toggleFullscreen = fullscreen.toggle;
   const [chime, setChime] = useState(false);
@@ -332,6 +513,29 @@ function Tv({ slug, initial }: { slug: string; initial: DisplayData | null }) {
           >
             {theme === "dark" ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
           </Control>
+          <div className="seg" role="group" aria-label="Display style">
+            {(
+              [
+                ["board", "Board", Rows3],
+                ["spotlight", "Spotlight", PanelLeft],
+                ["kinetic", "Kinetic", LayoutGrid],
+              ] as const
+            ).map(([value, name, Icon]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={style === value}
+                aria-label={`${name} style`}
+                title={`${name} style`}
+                onClick={() => {
+                  setOverride(undefined);
+                  setStyle(value);
+                }}
+              >
+                <Icon aria-hidden="true" className="size-4" />
+              </button>
+            ))}
+          </div>
           <PublicLanguage />
           <Control
             label={
@@ -402,7 +606,15 @@ function Tv({ slug, initial }: { slug: string; initial: DisplayData | null }) {
           </p>
         </div>
       ) : (
-        <Board counters={counters} calling={calling} label={t.nowServing} />
+        <div className="board-stage" data-style={style}>
+          {style === "spotlight" ? (
+            <Spotlight counters={counters} calling={calling} label={t.nowCalling} />
+          ) : style === "kinetic" ? (
+            <Kinetic counters={counters} calling={calling} label={t.nowServing} />
+          ) : (
+            <Board counters={counters} calling={calling} label={t.nowServing} />
+          )}
+        </div>
       )}
       <p className="sr-only" role="status" aria-live="polite">
         {spoken}
@@ -411,10 +623,10 @@ function Tv({ slug, initial }: { slug: string; initial: DisplayData | null }) {
   );
 }
 
-export function TvScreen({ slug, initial }: { slug: string; initial: DisplayData | null }) {
+export function TvScreen(props: TvProps) {
   return (
     <PublicLocale>
-      <Tv slug={slug} initial={initial} />
+      <Tv {...props} />
     </PublicLocale>
   );
 }

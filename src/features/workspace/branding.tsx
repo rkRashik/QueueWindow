@@ -62,6 +62,7 @@ export function BrandingSection({
   const [color, setColor] = useState(branding.primaryColor);
   const [logo, setLogo] = useState(branding.logoUrl ?? "");
   const [validationError, setValidationError] = useState(false);
+  const [displayStyle, setDisplayStyle] = useState<"board" | "spotlight" | "kinetic">("board");
   const validColor = /^#[0-9a-f]{6}$/i.test(color);
   const previewColor = validColor ? color : "#1B2231";
   const expiry = new Intl.DateTimeFormat(language, {
@@ -181,6 +182,31 @@ export function BrandingSection({
             <p className="muted mt-1">{plan.detail}</p>
           </section>
 
+          <section aria-labelledby="signage-title">
+            <h2 id="signage-title" className="admin-sub">
+              {t.signage}
+            </h2>
+            <div className="seg" role="group" aria-label={t.displayStyle}>
+              {(
+                [
+                  ["board", t.styleBoard],
+                  ["spotlight", t.styleSpotlight],
+                  ["kinetic", t.styleKinetic],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={displayStyle === value}
+                  onClick={() => setDisplayStyle(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="muted mt-2 text-sm">{t.displayStyleHelp}</p>
+          </section>
+
           <section aria-labelledby="links-title">
             <h2 id="links-title" className="admin-sub">
               {t.links}
@@ -188,7 +214,7 @@ export function BrandingSection({
             <ul className="admin-links">
               {(
                 [
-                  [t.tv, `/display/${slug}`, Monitor],
+                  [t.tv, `/display/${slug}?style=${displayStyle}`, Monitor],
                   [t.visitorLink, `/join/${slug}`, QrCode],
                   [t.kiosk, `/kiosk/${slug}`, Tablet],
                   [t.printQr, `/print/${slug}/qr`, Printer],

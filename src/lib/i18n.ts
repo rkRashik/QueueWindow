@@ -169,6 +169,12 @@ const en = {
   freeDetail: "Every feature, no limits on counters or staff.",
   trialEnds: "Trial ends",
   identity: "Identity",
+  signage: "TV display style",
+  displayStyle: "Display style",
+  displayStyleHelp: "Sets the style in the TV link below. The TV can also switch from its own control bar.",
+  styleBoard: "Board",
+  styleSpotlight: "Spotlight",
+  styleKinetic: "Kinetic",
 };
 
 const bn: typeof en = {
@@ -338,6 +344,12 @@ const bn: typeof en = {
   freeDetail: "সব ফিচার, কাউন্টার বা কর্মীর কোনো সীমা নেই।",
   trialEnds: "ট্রায়াল শেষ",
   identity: "পরিচয়",
+  signage: "টিভি ডিসপ্লের ধরন",
+  displayStyle: "ডিসপ্লের ধরন",
+  displayStyleHelp: "নিচের টিভি লিংকে এই ধরন যুক্ত হবে। টিভির নিজস্ব কন্ট্রোল বার থেকেও বদলানো যায়।",
+  styleBoard: "বোর্ড",
+  styleSpotlight: "স্পটলাইট",
+  styleKinetic: "কাইনেটিক",
 };
 
 export const dictionary = { en, bn };
