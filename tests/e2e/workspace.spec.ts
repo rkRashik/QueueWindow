@@ -45,6 +45,39 @@ test.describe("authenticated workspaces", () => {
     "Set QW_E2E_DATABASE_URL to run isolated Neon fixture tests.",
   );
 
+  test("only Pro workspaces show a saved custom venue logo", async ({ page, baseURL }) => {
+    await withWorkspace(page, baseURL!, async (slug) => {
+      const url = "https://example.com/venue.svg";
+      const pool = new Pool({ connectionString: database });
+      try {
+        await pool.query("update organizations set logo_url = $1 where slug = $2", [url, slug]);
+        await page.route(url, (route) => route.fulfill({
+          contentType: "image/svg+xml",
+          body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/></svg>',
+        }));
+        await page.goto(`/join/${slug}`);
+        await expect(page.locator(".visitor-head svg.venue-mark")).toBeVisible();
+        await expect(page.locator(".visitor-head img.venue-mark")).toHaveCount(0);
+
+        await pool.query("update organizations set plan = 'PRO' where slug = $1", [slug]);
+        await page.reload();
+        await expect(page.locator(".visitor-head img.venue-mark")).toHaveAttribute("src", url);
+        await page.goto("/desk");
+        await expect(page.locator(".desk-bar img.workspace-mark")).toHaveAttribute("src", url);
+        await page.goto("/admin?section=branding");
+        await expect(page.getByLabel("Logo URL")).toBeEnabled();
+        await expect(page.locator(".ws-head img.workspace-mark")).toHaveAttribute("src", url);
+
+        await page.unroute(url);
+        await page.route(url, (route) => route.abort());
+        await page.goto(`/join/${slug}`);
+        await expect(page.locator(".visitor-head svg.venue-mark")).toBeVisible();
+      } finally {
+        await pool.end();
+      }
+    });
+  });
+
   test("desk stays in sync with a fourth visitor and works by keyboard", async ({
     page,
     baseURL,
@@ -181,6 +214,13 @@ test.describe("authenticated workspaces", () => {
       // New workspaces are free and never expire unless QW_TRIAL_DAYS is set.
       await expect(page.getByRole("heading", { name: "Plan", exact: true })).toBeVisible();
       await expect(page.getByText("Free", { exact: true })).toBeVisible();
+      await expect(page.getByLabel("Logo URL")).toBeDisabled();
+      await expect(page.getByText(/Custom venue logo is available on the Pro plan/)).toBeVisible();
+      await page.getByRole("button", { name: "Audio & Voice" }).click();
+      await page.getByLabel("Chime sound").selectOption("clinic");
+      await expect(page.getByRole("link", { name: "TV display" })).toHaveAttribute(
+        "href", /chime=clinic/,
+      );
 
       await page.request.post("/api/auth/logout", {
         headers: { Origin: baseURL! },

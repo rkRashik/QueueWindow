@@ -6,7 +6,7 @@ import { useCallback, useSyncExternalStore } from "react";
 export function useStoredChoice<T extends string>(
   key: string,
   fallback: T,
-  allowed: readonly T[],
+  allowed?: readonly T[],
 ) {
   const subscribe = useCallback(
     (change: () => void) => {
@@ -22,7 +22,7 @@ export function useStoredChoice<T extends string>(
   const read = useCallback((): T => {
     try {
       const value = localStorage.getItem(key) as T | null;
-      return value && allowed.includes(value) ? value : fallback;
+      return value !== null && (!allowed || allowed.includes(value)) ? value : fallback;
     } catch {
       return memory.get(key) === undefined ? fallback : (memory.get(key) as T);
     }

@@ -4,15 +4,20 @@ import { ArrowRight, Printer } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Plate } from "@/components/plate";
+import { VenueMark } from "@/components/venue-mark";
 import { api, ApiError, jsonRequest } from "@/features/workspace/client";
 import { sortCounters } from "@/lib/counter-theme";
 import { formatNumber } from "@/lib/i18n";
+import { useStoredChoice } from "@/lib/stored";
+import { formatClock } from "@/lib/time";
 import { Dual, PublicLocale, Tx, usePublicLocale } from "./language";
 import { usePublicFeed, type DisplayData, type PublicCounter, type Venue } from "./live";
 import { QrCode } from "./qr";
 import { ConnectionNote, VisitorShell } from "./ui";
 
-type Receipt = { ticketId: string; tokenNumber: string; counterName: string; prefix: string };
+type IssuedTicket = { ticketId: string; tokenNumber: string; issuedAt: string };
+type Receipt = IssuedTicket & { counterName: string; prefix: string };
+const paperWidths = ["80", "58"] as const;
 
 function requestId() {
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
@@ -94,16 +99,33 @@ function KioskReceipt({
   done: () => void;
 }) {
   const { t } = usePublicLocale();
-  const [paper, setPaper] = useState<"58" | "80">("58");
+  const [paper, setPaper] = useStoredChoice("qw-kiosk-paper", "80", paperWidths);
   const track = new URL(`/join/${slug}/ticket/${receipt.ticketId}`, origin).href;
+  const issued = new Date(receipt.issuedAt);
+  // Leave room for wrapped names and unusually long tokens on the narrower roll.
+  const longReceipt = venue.name.length + receipt.counterName.length > 72 || receipt.tokenNumber.length > 8;
   useEffect(() => {
-    const reset = setTimeout(done, 30_000);
-    return () => clearTimeout(reset);
+    let reset = setTimeout(done, 30_000);
+    const pause = () => clearTimeout(reset);
+    function resume() {
+      pause();
+      reset = setTimeout(done, 30_000);
+    }
+    window.addEventListener("beforeprint", pause);
+    window.addEventListener("afterprint", resume);
+    return () => {
+      pause();
+      window.removeEventListener("beforeprint", pause);
+      window.removeEventListener("afterprint", resume);
+    };
   }, [done]);
   return (
     <div className="kiosk-done">
-      <section className="receipt" data-paper={paper} aria-labelledby="receipt-title">
-        <p className="receipt-venue">{venue.name}</p>
+      <section className="receipt" data-paper={paper} data-long={longReceipt || undefined} aria-labelledby="receipt-title">
+        <div className="receipt-venue">
+          <VenueMark venue={venue} />
+          <span>{venue.name}</span>
+        </div>
         <h1 id="receipt-title" className="caps">
           <Tx k="ticket" inline />
         </h1>
@@ -114,6 +136,9 @@ function KioskReceipt({
           <Plate prefix={receipt.prefix} />
           <span>{receipt.counterName}</span>
         </p>
+        <time className="receipt-time" dateTime={receipt.issuedAt}>
+          <Dual en={`Issued at ${formatClock(issued)}`} bn={`${formatClock(issued, "bn")}-এ ইস্যু করা হয়েছে`} />
+        </time>
         <div className="receipt-qr">
           <QrCode value={track} label="Track this ticket QR code" />
         </div>
@@ -123,7 +148,7 @@ function KioskReceipt({
       </section>
       <div className="no-print kiosk-actions">
         <div className="seg" role="group" aria-label={t.paper}>
-          {(["58", "80"] as const).map((width) => (
+          {paperWidths.map((width) => (
             <button
               key={width}
               type="button"
@@ -161,7 +186,7 @@ function Arrival({
 }) {
   const router = useRouter();
   const { t } = usePublicLocale();
-  const { data, error, online, reconnecting, refresh } = usePublicFeed(slug, undefined, initial);
+  const { data, venue, error, online, reconnecting, refresh } = usePublicFeed(slug, undefined, initial);
   const [pending, setPending] = useState<string | null>(null);
   const [failure, setFailure] = useState<
     "limited" | "pausedError" | "expired" | "joinError" | null
@@ -179,7 +204,7 @@ function Arrival({
     const slot = `qw-pending-${mode}-${slug}-${counter.id}`;
     try {
       const idempotencyKey = pendingKey(slot, keys.current);
-      const result = await api<{ ticketId: string; tokenNumber: string }>(
+      const result = await api<IssuedTicket>(
         `/api/public/${slug}/join`,
         jsonRequest("POST", { counterId: counter.id, idempotencyKey }),
       );
@@ -209,11 +234,11 @@ function Arrival({
   const counters = sortCounters(data?.counters ?? []);
 
   return (
-    <VisitorShell venue={data?.organization} wide={Boolean(kioskOrigin)}>
-      {receipt && kioskOrigin && data ? (
+    <VisitorShell venue={venue} wide={Boolean(kioskOrigin)}>
+      {receipt && kioskOrigin && venue ? (
         <KioskReceipt
           receipt={receipt}
-          venue={data.organization}
+          venue={venue}
           slug={slug}
           origin={kioskOrigin}
           done={done}

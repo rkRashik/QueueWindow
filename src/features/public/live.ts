@@ -12,7 +12,7 @@ import { ApiError, api, type Wire } from "@/features/workspace/client";
 
 export type DisplayData = Wire<Awaited<ReturnType<typeof displaySnapshot>>>;
 export type PublicCounter = DisplayData["counters"][number];
-export type Venue = DisplayData["organization"];
+export type Venue = DisplayData["organization"] & Pick<DisplayData, "plan">;
 export type TicketData = Awaited<ReturnType<typeof visitorTicket>>;
 
 function subscribe(change: () => void) {
@@ -125,6 +125,7 @@ export function usePublicFeed(
 
   return {
     data,
+    venue: data ? { ...data.organization, plan: data.plan } : undefined,
     error,
     reconnecting: reconnecting || !online,
     online,

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { ArrowLeft, Printer } from "lucide-react";
-import { QueueMark } from "@/components/brand";
+import { BrandMark } from "@/components/brand";
+import { VenueMark } from "@/components/venue-mark";
 import type { Venue } from "./live";
 import { QrCode } from "./qr";
-import { VenueMark } from "./ui";
 
 export function PrintSign({ venue, url, slug }: { venue: Venue; url: string; slug: string }) {
   return (
@@ -23,7 +23,7 @@ export function PrintSign({ venue, url, slug }: { venue: Venue; url: string; slu
       </nav>
       <article className="poster" aria-labelledby="poster-title">
         <header className="poster-venue">
-          <VenueMark logoUrl={venue.logoUrl} primaryColor={venue.primaryColor} name={venue.name} />
+          <VenueMark venue={venue} />
           <span className="sign">{venue.name}</span>
         </header>
         <h1 id="poster-title" className="sign poster-title">
@@ -50,7 +50,7 @@ export function PrintSign({ venue, url, slug }: { venue: Venue; url: string; slu
         <footer className="poster-foot">
           <span className="sign">{new URL(url).host}</span>
           <span className="poster-brand">
-            <QueueMark size={20} />
+            <BrandMark size={20} />
             QueueWindow
           </span>
         </footer>

@@ -338,7 +338,24 @@
   text-align: center;
 }
 .receipt-venue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   font-weight: 700;
+}
+.receipt-venue span,
+.receipt-counter span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.receipt-venue .venue-mark {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.receipt-time {
+  color: var(--fg-2);
+  font-size: 0.875rem;
 }
 .receipt-token {
   font-size: 6rem;
@@ -531,30 +548,6 @@
     height: 297mm;
     border: 0;
   }
-  .visitor {
-    background: #fff;
-  }
-  .kiosk-done {
-    display: block;
-    padding: 0;
-  }
-  .receipt {
-    width: 58mm;
-    padding: 2mm 0;
-    border: 0;
-    border-radius: 0;
-    background: #fff;
-    color: #000;
-  }
-  .receipt[data-paper="80"] {
-    width: 80mm;
-  }
-  .receipt-token {
-    font-size: 16mm;
-  }
-  .receipt-qr {
-    width: 30mm;
-  }
 }
 
 /* ── Step cue and tappable counter cards (join + kiosk) ───────────── */
@@ -722,4 +715,92 @@
 }
 .visitor:not([data-wide="true"]) .counter-choice-plate {
   font-size: 2rem;
+}
+
+/* CSS page sizes with a custom width require an explicit second dimension. */
+@page thermal-80 {
+  size: 80mm 120mm;
+  margin: 0;
+}
+@page thermal-58 {
+  size: 58mm 120mm;
+  margin: 0;
+}
+@page thermal-80-long {
+  size: 80mm 175mm;
+  margin: 0;
+}
+@page thermal-58-long {
+  size: 58mm 175mm;
+  margin: 0;
+}
+@media print {
+  body:has(.kiosk-done) .skip-link {
+    display: none;
+  }
+  .visitor:has(.kiosk-done) {
+    page: thermal-80;
+    display: block;
+    min-height: 0;
+    background: #fff;
+  }
+  .visitor:has(.receipt[data-paper="58"]) {
+    page: thermal-58;
+  }
+  .visitor:has(.receipt[data-long]) {
+    page: thermal-80-long;
+  }
+  .visitor:has(.receipt[data-long][data-paper="58"]) {
+    page: thermal-58-long;
+  }
+  .visitor:has(.kiosk-done) .visitor-body,
+  .kiosk-done {
+    display: block;
+    width: 100%;
+    padding: 0;
+  }
+  .visitor[data-wide="true"] .receipt {
+    width: 100%;
+    gap: 1.6mm;
+    padding: 3mm;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+    color: #000;
+    line-height: 1.15;
+    break-inside: avoid;
+    print-color-adjust: exact;
+  }
+  .receipt .venue-mark {
+    width: 6mm;
+    height: 6mm;
+  }
+  .visitor[data-wide="true"] .receipt-token {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    font-size: 14mm;
+  }
+  .visitor[data-wide="true"] .receipt[data-paper="58"] .receipt-token {
+    font-size: 11mm;
+  }
+  .receipt-venue,
+  .receipt-counter {
+    max-width: 100%;
+    font-size: 10pt;
+  }
+  .receipt-counter .plate {
+    border: 1px solid #000;
+    background: #fff;
+    color: #000;
+    font-size: 12pt;
+  }
+  .receipt-qr {
+    width: 31mm;
+    margin-top: 0;
+  }
+  .receipt-time,
+  .receipt-help {
+    color: #000;
+    font-size: 9pt;
+  }
 }

@@ -12,9 +12,10 @@ import {
   type ReactNode,
 } from "react";
 import { Wordmark } from "@/components/brand";
+import { VenueMark, type VenueBranding } from "@/components/venue-mark";
 import { LanguageSwitch, useLocale } from "./locale";
 
-export type Workspace = {
+export type Workspace = VenueBranding & {
   demo?: boolean;
   name: string;
   slug: string;
@@ -28,16 +29,16 @@ export function WorkspaceHeader({
   organization,
   children,
 }: {
-  organization: string;
+  organization: VenueBranding & { name: string };
   children?: ReactNode;
 }) {
   const { t } = useLocale();
   return (
     <header className="ws-head">
       <div className="ws-head-row">
-        <Wordmark href="/desk" />
-        <span className="ws-org" title={organization}>
-          {organization}
+        <Wordmark href="/desk" mark={<VenueMark venue={organization} size={28} className="workspace-mark" />} />
+        <span className="ws-org" title={organization.name}>
+          {organization.name}
         </span>
         <div className="ms-auto flex items-center gap-1.5">
           <Link className="key key-quiet key-sm" href="/desk">

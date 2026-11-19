@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getSnapshot, requireSlug } from "@/features/public/server";
 import { TvScreen, type DisplayStyle } from "@/features/public/tv";
+import { parseAudioPreferences } from "@/features/public/audio-preferences";
 
 export const metadata: Metadata = { title: "Waiting room display" };
 
@@ -12,11 +13,11 @@ export default async function DisplayPage({
   searchParams,
 }: {
   params: Promise<{ orgSlug: string }>;
-  searchParams: Promise<{ style?: string | string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const slug = requireSlug((await params).orgSlug);
-  const { style } = await searchParams;
-  const forcedStyle = styles.find((value) => value === style);
+  const query = await searchParams;
+  const forcedStyle = styles.find((value) => value === query.style);
   return (
     <>
       <script
@@ -25,7 +26,7 @@ export default async function DisplayPage({
           __html: `try{document.documentElement.dataset.tv=localStorage.getItem("qw-tv-theme")||"dark"}catch(e){}`,
         }}
       />
-      <TvScreen slug={slug} initial={await getSnapshot(slug)} forcedStyle={forcedStyle} />
+      <TvScreen slug={slug} initial={await getSnapshot(slug)} forcedStyle={forcedStyle} audioOverrides={parseAudioPreferences(query)} />
     </>
   );
 }

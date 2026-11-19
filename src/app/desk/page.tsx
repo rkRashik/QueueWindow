@@ -13,6 +13,8 @@ export default async function DeskPage() {
     <DeskScreen
       workspace={{
         name: organization.name,
+        plan: organization.plan,
+        logoUrl: organization.logoUrl,
         slug: organization.slug,
         role: user.role,
         demo:

@@ -168,7 +168,7 @@ function Admin({ workspace, section }: { workspace: AdminWorkspace; section: Adm
   ];
   return (
     <div className="admin">
-      <WorkspaceHeader organization={branding.name} />
+      <WorkspaceHeader organization={branding} />
       <div className="admin-body">
         <nav aria-label={t.adminNavigation} className="admin-index">
           {items.map(({ id, label }) => (

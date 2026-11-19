@@ -4,6 +4,7 @@ import {
   Atkinson_Hyperlegible_Next,
   Barlow_Semi_Condensed,
 } from "next/font/google";
+import { siteDescription, siteName, siteTitle, siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const text = Atkinson_Hyperlegible_Next({
@@ -26,9 +27,22 @@ const bangla = Anek_Bangla({
 });
 
 export const metadata: Metadata = {
-  title: { default: "QueueWindow", template: "%s · QueueWindow" },
-  description: "Service queues for desks, waiting rooms and phones.",
-  robots: { index: false, follow: false },
+  metadataBase: siteUrl(),
+  title: { default: siteName, template: "%s · QueueWindow" },
+  description: siteDescription,
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName,
+    title: `${siteTitle} · ${siteName}`,
+    description: siteDescription,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteTitle} · ${siteName}`,
+    description: siteDescription,
+  },
+  icons: { apple: "/icon-192.png" },
 };
 
 export const viewport: Viewport = {

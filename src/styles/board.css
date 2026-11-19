@@ -14,7 +14,7 @@
   background: var(--bg);
   color: var(--fg);
 }
-.board[data-awake="false"] {
+.board[data-awake="false"]:not(:has(.board-controls :focus-visible, .board-controls [aria-expanded="true"])) {
   cursor: none;
 }
 /* Set before paint from the stored choice, so a light TV never flashes dark. */
@@ -33,11 +33,15 @@ html[data-tv="light"] .board.surface-dark {
 }
 
 .board-head {
+  --audio-panel-height: min(23rem, 48dvh);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: clamp(12px, 2vw, 40px);
   min-height: clamp(64px, 11vh, 150px);
+}
+.board-head:has(.board-audio-panel) {
+  padding-bottom: calc(var(--audio-panel-height) + 6px);
 }
 .board-venue {
   display: flex;
@@ -48,7 +52,6 @@ html[data-tv="light"] .board.surface-dark {
 .board-venue .venue-mark {
   width: clamp(36px, 6vh, 80px);
   height: clamp(36px, 6vh, 80px);
-  font-size: clamp(1.1rem, 3.4vh, 2.6rem);
 }
 .board-title {
   overflow: hidden;
@@ -69,10 +72,14 @@ html[data-tv="light"] .board.surface-dark {
     opacity 280ms ease,
     transform 280ms var(--ease-out);
 }
-.board[data-awake="false"] .board-controls {
+.board[data-awake="false"] .board-controls:not(:has(:focus-visible, [aria-expanded="true"])) {
   opacity: 0;
   transform: translateY(-6px);
   pointer-events: none;
+}
+.board-audio-panel {
+  max-height: var(--audio-panel-height);
+  overflow-y: auto;
 }
 .board-status {
   display: flex;
@@ -105,6 +112,25 @@ html[data-tv="light"] .board.surface-dark {
   font-size: clamp(0.8rem, 1.9vh, 1.5rem);
   font-weight: 600;
   white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .board-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+    padding-top: 8px;
+  }
+  .board-controls {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    justify-self: end;
+    justify-content: flex-end;
+  }
+  .board-status {
+    grid-column: 2;
+    grid-row: 1;
+  }
 }
 
 .board-frame {
@@ -379,22 +405,31 @@ html[data-tv="light"] .surface-dark .board-row .board-closed {
 }
 
 .venue-mark {
-  display: grid;
   flex-shrink: 0;
-  place-items: center;
   width: 2.5rem;
   height: 2.5rem;
   overflow: hidden;
   border-radius: 4px;
-  background: var(--venue, var(--fg));
-  color: #fff;
-  font-family: var(--font-sign);
-  font-size: 1.35rem;
-  font-weight: 700;
-  line-height: 1;
   object-fit: contain;
-  box-shadow: inset 0 0 0 1px var(--line-2);
 }
-img.venue-mark {
+img.venue-mark,
+img.workspace-mark {
+  border-radius: 4px;
   background: #fff;
+  object-fit: contain;
+}
+
+.menu.audio-panel {
+  width: min(20rem, calc(100vw - 36px));
+  min-width: 0;
+  padding: 0.875rem;
+}
+.audio-fields {
+  display: grid;
+  gap: 0.75rem;
+}
+.audio-speech-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.625rem;
 }

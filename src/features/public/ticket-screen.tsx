@@ -109,7 +109,7 @@ function Ticket({ slug, ticketId, initial }: Props) {
   const prefix = prefixOf(ticket?.tokenNumber ?? "");
 
   return (
-    <VisitorShell venue={feed.data?.organization} tone={status === "CALLED" ? "signal" : undefined}>
+    <VisitorShell venue={feed.venue} tone={status === "CALLED" ? "signal" : undefined}>
       {feed.reconnecting && (
         <ConnectionNote>
           {t.offline} {ticket && t.offlineDetail}

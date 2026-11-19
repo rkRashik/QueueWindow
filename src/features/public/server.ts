@@ -26,7 +26,8 @@ export async function getSnapshot(slug: string): Promise<DisplayData> {
 }
 
 export async function getVenue(slug: string) {
-  return (await getSnapshot(slug)).organization;
+  const { organization, plan } = await getSnapshot(slug);
+  return { ...organization, plan };
 }
 
 export async function publicOrigin() {

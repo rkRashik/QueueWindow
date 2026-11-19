@@ -46,6 +46,7 @@ export async function displaySnapshot(db: Database, slug: string) {
         logoUrl: organizations.logoUrl,
         primaryColor: organizations.primaryColor,
       },
+      plan: organizations.plan,
       counter: {
         id: counters.id,
         name: counters.name,
@@ -70,6 +71,7 @@ export async function displaySnapshot(db: Database, slug: string) {
   if (!rows[0]) throw new AppError("Organization not found.", 404);
   return {
     organization: rows[0].organization,
+    plan: rows[0].plan,
     counters: rows.flatMap((row) =>
       row.counter
         ? [

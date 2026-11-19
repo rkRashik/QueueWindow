@@ -10,6 +10,10 @@ test("the laptop hero shows the live board and one clear path", async ({ page })
   await expect(main.getByRole("button", { name: "Open live demo" })).toBeInViewport();
   await expect(page.getByRole("link", { name: "Create workspace" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Log in" }).first()).toBeVisible();
+  await expect(page.getByRole("contentinfo")).toContainText("Built by Redwanul Rashik");
+  await expect(page.getByRole("link", { name: "rkrashik@gmail.com" })).toHaveAttribute(
+    "href", "mailto:rkrashik@gmail.com",
+  );
   // Free product: no trial or paywall copy anywhere on the page.
   await expect(page.locator("body")).not.toContainText(/trial|upgrade|pricing/i);
 });
@@ -31,4 +35,28 @@ test("a failed demo request explains itself without breaking a 320px layout", as
   expect(errorBox!.y).toBeGreaterThanOrEqual(demoBox!.y + demoBox!.height);
   await expect(demo).toBeEnabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+});
+
+test("the homepage publishes social previews, crawl rules, and mobile icons", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute("content", "summary_large_image");
+  const graphImage = page.locator('meta[property="og:image"]');
+  await expect(graphImage).toHaveAttribute("content", /\/opengraph-image/);
+  await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute("content", /\/opengraph-image/);
+  const preview = await page.request.get(new URL((await graphImage.getAttribute("content"))!).pathname);
+  expect(preview.headers()["content-type"]).toContain("image/png");
+
+  const robots = await (await page.request.get("/robots.txt")).text();
+  for (const rule of ["Allow: /", "Disallow: /api/", "Disallow: /desk", "Disallow: /admin", "Sitemap:"]) {
+    expect(robots).toContain(rule);
+  }
+  const sitemap = await (await page.request.get("/sitemap.xml")).text();
+  expect([...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map(([, url]) => new URL(url).pathname)).toEqual([
+    "/", "/login", "/signup",
+  ]);
+  const manifest = await (await page.request.get("/manifest.webmanifest")).json();
+  expect(manifest.name).toBe("QueueWindow");
+  for (const icon of manifest.icons) {
+    expect((await page.request.get(icon.src)).ok()).toBe(true);
+  }
 });

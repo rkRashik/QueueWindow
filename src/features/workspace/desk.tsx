@@ -14,7 +14,7 @@ import {
   Tablet,
 } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
-import { QueueMark } from "@/components/brand";
+import { VenueMark } from "@/components/venue-mark";
 import { Drum } from "@/components/drum";
 import { FullscreenToggle } from "@/components/fullscreen";
 import { Plate } from "@/components/plate";
@@ -340,7 +340,7 @@ function Desk({ workspace }: { workspace: Workspace }) {
     >
       <header className="desk-bar">
         <Link href="/desk" className="desk-mark" aria-label="QueueWindow">
-          <QueueMark size={26} />
+          <VenueMark venue={workspace} size={26} className="workspace-mark" />
         </Link>
         <p className="desk-org" title={workspace.name}>
           <span className="truncate">{workspace.name}</span>

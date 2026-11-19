@@ -2,8 +2,6 @@
 
 import {
   Maximize2,
-  Mic,
-  MicOff,
   Minimize2,
   Moon,
   Sun,
@@ -17,14 +15,17 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import { Drum } from "@/components/drum";
 import { Plate } from "@/components/plate";
 import { useFullscreen } from "@/components/fullscreen";
+import { Popover } from "@/components/popover";
+import { VenueMark } from "@/components/venue-mark";
 import { counterVars, getCounterTheme, sortCounters } from "@/lib/counter-theme";
 import { formatNumber } from "@/lib/i18n";
 import { useStoredChoice } from "@/lib/stored";
 import { formatClock, formatDay } from "@/lib/time";
 import { announce, useChime } from "./audio";
+import type { AudioPreferences } from "./audio-preferences";
+import { AudioVoiceSettings, useAudioPreferences } from "./audio-settings";
 import { Dual, PublicLanguage, PublicLocale, Tx, usePublicLocale } from "./language";
 import { usePublicFeed, type DisplayData, type PublicCounter } from "./live";
-import { VenueMark } from "./ui";
 
 type Theme = "light" | "dark";
 export type DisplayStyle = "board" | "spotlight" | "kinetic";
@@ -380,9 +381,14 @@ function Control({
   );
 }
 
-type TvProps = { slug: string; initial: DisplayData | null; forcedStyle?: DisplayStyle };
+type TvProps = {
+  slug: string;
+  initial: DisplayData | null;
+  forcedStyle?: DisplayStyle;
+  audioOverrides?: Partial<AudioPreferences>;
+};
 
-function Tv({ slug, initial, forcedStyle }: TvProps) {
+function Tv({ slug, initial, forcedStyle, audioOverrides }: TvProps) {
   const { language, t } = usePublicLocale();
   const [theme, setTheme] = useStoredChoice<Theme>("qw-tv-theme", "dark", themes);
   const [storedStyle, setStyle] = useStoredChoice<DisplayStyle>(
@@ -395,19 +401,18 @@ function Tv({ slug, initial, forcedStyle }: TvProps) {
   const style = override ?? storedStyle;
   const fullscreen = useFullscreen();
   const toggleFullscreen = fullscreen.toggle;
-  const [chime, setChime] = useState(false);
-  const [voice, setVoice] = useState(false);
-  const [noVoice, setNoVoice] = useState(false);
-  const [awake, setAwake] = useState(true);
+  const [awake, setAwake] = useState(false);
+  const header = useRef<HTMLElement>(null);
   const [calling, setCalling] = useState<ReadonlyMap<string, string>>(new Map());
   const [spoken, setSpoken] = useState("");
   const last = useRef(calls(initial));
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const { settings, change } = useAudioPreferences(audioOverrides);
   const sound = useChime();
-  const settings = useRef({ chime, voice, play: sound.play });
+  const audio = useRef({ settings, language, play: sound.play });
   useEffect(() => {
-    settings.current = { chime, voice, play: sound.play };
-  }, [chime, voice, sound.play]);
+    audio.current = { settings, language, play: sound.play };
+  }, [settings, language, sound.play]);
 
   // A new call (or recall) lights its row for 8 s and rings once.
   const onSnapshot = useCallback((snapshot: DisplayData) => {
@@ -439,32 +444,44 @@ function Tv({ slug, initial, forcedStyle }: TvProps) {
     setSpoken(
       changed.map((counter) => `${counter.calledTicket!.tokenNumber}, ${counter.name}`).join(". "),
     );
-    if (settings.current.chime) settings.current.play();
-    if (settings.current.voice)
-      for (const counter of changed) announce(counter.calledTicket!.tokenNumber, counter.name);
+    const { settings, language, play } = audio.current;
+    play(settings.chime);
+    if (settings.voice === "on") {
+      for (const counter of changed) {
+        announce(counter.calledTicket!.tokenNumber, counter.name, settings, language);
+      }
+    }
   }, []);
 
-  const { data, error, reconnecting, refresh } = usePublicFeed(slug, onSnapshot, initial);
+  const { data, venue, error, reconnecting, refresh } = usePublicFeed(slug, onSnapshot, initial);
 
-  // Controls live in reserved header space and fade out with the cursor after 3 s idle.
   useEffect(() => {
     let sleep: ReturnType<typeof setTimeout> | undefined;
     function wake() {
       setAwake(true);
       clearTimeout(sleep);
-      sleep = setTimeout(() => setAwake(false), 3_000);
+      sleep = setTimeout(() => setAwake(false), 2_500);
+    }
+    function move(event: PointerEvent) {
+      if (event.pointerType === "touch") return;
+      if (event.clientY <= 110 || (event.target instanceof Node && header.current?.contains(event.target))) wake();
+    }
+    function tap(event: PointerEvent) {
+      if (event.pointerType === "touch") wake();
     }
     function key(event: KeyboardEvent) {
-      if (event.key.toLowerCase() === "f" && !event.ctrlKey && !event.metaKey && !event.altKey)
+      if (event.key.toLowerCase() === "f" && !event.ctrlKey && !event.metaKey && !event.altKey
+        && !(event.target instanceof HTMLElement && event.target.closest("input, select, textarea, [contenteditable]"))) {
         toggleFullscreen();
+      }
     }
-    wake();
-    const events = ["pointermove", "pointerdown", "keydown"] as const;
-    for (const name of events) window.addEventListener(name, wake, { passive: true });
+    window.addEventListener("pointermove", move, { passive: true });
+    window.addEventListener("pointerdown", tap, { passive: true });
     window.addEventListener("keydown", key);
     const pending = timers.current;
     return () => {
-      for (const name of events) window.removeEventListener(name, wake);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerdown", tap);
       window.removeEventListener("keydown", key);
       clearTimeout(sleep);
       for (const timer of pending.values()) clearTimeout(timer);
@@ -476,6 +493,9 @@ function Tv({ slug, initial, forcedStyle }: TvProps) {
   }, [theme]);
 
   const counters = sortCounters(data?.counters ?? []);
+  function unlockSound() {
+    if (settings.chime !== "mute" && sound.status === "locked") void sound.unlock();
+  }
 
   return (
     <main
@@ -483,22 +503,18 @@ function Tv({ slug, initial, forcedStyle }: TvProps) {
       lang={language}
       className={`board ${theme === "dark" ? "surface-dark" : ""}`}
       data-awake={awake}
+      onPointerUp={unlockSound}
+      onKeyDown={unlockSound}
     >
-      <header className="board-head">
+      <header ref={header} className="board-head">
         <div className="board-venue">
-          <VenueMark
-            key={data?.organization.logoUrl}
-            logoUrl={data?.organization.logoUrl}
-            primaryColor={data?.organization.primaryColor}
-            name={data?.organization.name}
-          />
-          <h1 className="sign board-title">{data?.organization.name ?? "QueueWindow"}</h1>
+          <VenueMark venue={venue} />
+          <h1 className="sign board-title">{venue?.name ?? "QueueWindow"}</h1>
         </div>
         <div
           className="board-controls"
           role="group"
           aria-label="Display controls"
-          inert={!awake}
         >
           <Control
             label={fullscreen.active ? "Exit fullscreen (F)" : "Fullscreen (F)"}
@@ -537,51 +553,21 @@ function Tv({ slug, initial, forcedStyle }: TvProps) {
             ))}
           </div>
           <PublicLanguage />
-          <Control
-            label={
-              sound.status === "ready"
-                ? chime
-                  ? "Chime on"
-                  : "Chime off"
-                : sound.status === "unavailable"
-                  ? t.audioUnavailable
-                  : t.sound
-            }
-            pressed={sound.status === "ready" && chime}
-            onClick={async () => {
-              if (sound.status === "ready") return setChime(!chime);
-              if (await sound.unlock()) {
-                setChime(true);
-                sound.play();
-              }
-            }}
+          <Popover
+            label="Audio & Voice"
+            triggerClassName="key key-quiet key-icon"
+            panelClassName="audio-panel board-audio-panel"
+            trigger={settings.chime === "mute" && settings.voice === "off"
+              ? <VolumeX aria-hidden="true" />
+              : <Volume2 aria-hidden="true" />}
           >
-            {sound.status === "ready" && chime ? (
-              <Volume2 aria-hidden="true" />
-            ) : (
-              <VolumeX aria-hidden="true" />
-            )}
-          </Control>
-          <Control
-            label={voice ? "Voice announcements on" : "Voice announcements off"}
-            pressed={voice}
-            onClick={() => {
-              if (!("speechSynthesis" in window)) return setNoVoice(true);
-              if (voice) window.speechSynthesis.cancel();
-              setVoice(!voice);
-            }}
-          >
-            {voice ? <Mic aria-hidden="true" /> : <MicOff aria-hidden="true" />}
-          </Control>
+            {() => <AudioVoiceSettings settings={settings} change={change} displayLanguage={language} sound={sound} />}
+          </Popover>
         </div>
         <div className="board-status">
-          {(reconnecting || noVoice) && (
+          {reconnecting && (
             <p role="status" className="board-note">
-              {reconnecting ? (
-                <Tx k="offline" />
-              ) : (
-                "Voice is unavailable on this device."
-              )}
+              <Tx k="offline" />
             </p>
           )}
           <Clock />

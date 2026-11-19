@@ -7,12 +7,14 @@ export function Popover({
   trigger,
   label,
   triggerClassName = "key key-quiet key-sm",
+  panelClassName = "",
   align = "end",
   children,
 }: {
   trigger: ReactNode;
   label: string;
   triggerClassName?: string;
+  panelClassName?: string;
   align?: "start" | "end";
   children: (close: () => void) => ReactNode;
 }) {
@@ -55,7 +57,7 @@ export function Popover({
       {open && (
         <div
           id={id}
-          className="menu"
+          className={`menu ${panelClassName}`}
           style={align === "end" ? { right: 0 } : { left: 0 }}
         >
           {children(() => setOpen(false))}

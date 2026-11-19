@@ -3,10 +3,12 @@ import Link from "next/link";
 import { Wordmark } from "@/components/brand";
 import { DemoButton } from "@/features/landing/demo-button";
 import { LiveBoard } from "@/features/landing/live-board";
+import { siteDescription } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Service queues for desks, boards and phones",
-  description: "Call from the desk. The waiting-room board and every visitor’s phone follow.",
+  description: siteDescription,
+  alternates: { canonical: "/" },
 };
 
 const parts = [
@@ -57,6 +59,12 @@ export default function Home() {
       </main>
       <footer className="landing-foot">
         <span className="muted text-sm">QueueWindow · English & বাংলা</span>
+        <p className="muted text-sm">
+          Built by Redwanul Rashik ·{" "}
+          <a className="underline underline-offset-4" href="mailto:rkrashik@gmail.com">
+            rkrashik@gmail.com
+          </a>
+        </p>
         <nav aria-label="Footer" className="flex gap-1">
           <Link className="key key-quiet key-sm" href="/login">
             Log in
