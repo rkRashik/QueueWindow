@@ -3,9 +3,22 @@ import { NextResponse } from "next/server";
 import { AppError } from "./app-error";
 export { AppError as HttpError } from "./app-error";
 
+const loopbackHost = /^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i;
+
 export function assertSameOrigin(request: Request) {
-  const expected = new URL(process.env.APP_URL || request.url).origin;
-  if (request.headers.get("origin") !== expected) {
+  const appUrl = process.env.APP_URL;
+  const expected = new URL(appUrl || request.url);
+  const host = request.headers.get("host");
+  // Next can normalize local request URLs to localhost. Use the loopback
+  // authority the browser actually contacted when APP_URL is unset.
+  const loopbackOrigin =
+    !appUrl &&
+    host &&
+    loopbackHost.test(expected.host) &&
+    loopbackHost.test(host)
+      ? URL.parse(`${expected.protocol}//${host}`)?.origin
+      : undefined;
+  if (request.headers.get("origin") !== (loopbackOrigin ?? expected.origin)) {
     throw new AppError(
       "This request could not be verified. Reload and try again.",
       403,

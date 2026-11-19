@@ -89,42 +89,45 @@ export default function Home() {
         </div>
       </header>
       <main id="main">
-        <div className="landing-width">
-          <section className="landing-hero">
+        <section aria-labelledby="hero-heading" className="landing-hero">
+          <div className="landing-width landing-hero-layout">
             <div>
-              <h1>Run the queue from desk to waiting room.</h1>
+              <p className="inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-800">
+                Multi-Counter Queue SaaS • Bangla &amp; English
+              </p>
+              <h1
+                id="hero-heading"
+                className="mt-5 max-w-[17ch] text-4xl leading-[1.06] font-extrabold -tracking-[.045em] text-balance sm:text-5xl lg:text-6xl"
+              >
+                Run the queue from desk to waiting room.
+              </h1>
               <p className="landing-summary">
                 Call tickets across counters and let visitors follow their turn
                 on their phones. The waiting room display shows Bangla and
                 English together.
               </p>
-              <div className="mt-6 flex flex-wrap items-start gap-3">
-                <DemoButton />
-                <Link className="btn min-h-13 px-5" href="/signup">
-                  Start Free Trial
-                </Link>
+              <div className="mt-6">
+                <DemoButton>
+                  <Link className="btn min-h-13 px-3 sm:px-5" href="/signup">
+                    Start Free Trial
+                  </Link>
+                </DemoButton>
               </div>
-            </div>
-            <div className="landing-context">
-              <BadgeCheck
-                className="mb-3 size-5 text-brand"
-                aria-hidden="true"
-              />
-              <p className="font-extrabold">
-                For clinics, diagnostic centers, banks, and service desks.
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-muted">
-                Visitors join with a QR code. No names, phone numbers, or
-                accounts needed.
+              <p className="mt-5 flex items-start gap-2 text-sm leading-relaxed font-semibold text-muted">
+                <BadgeCheck
+                  className="mt-0.5 size-4 shrink-0 text-brand"
+                  aria-hidden="true"
+                />
+                Visitors join by QR code without sharing personal details.
               </p>
             </div>
-          </section>
-          <ProductPreview />
-        </div>
+            <ProductPreview />
+          </div>
+        </section>
 
         <section
           aria-labelledby="capabilities"
-          className="landing-width py-14 sm:py-20"
+          className="landing-width py-11 sm:py-14"
         >
           <h2
             id="capabilities"
@@ -135,8 +138,12 @@ export default function Home() {
           <div className="feature-grid mt-5">
             {features.map(({ title, text, Icon }) => (
               <article key={title}>
-                <Icon className="mb-3 size-5 text-brand" aria-hidden="true" />
-                <h3 className="font-extrabold">{title}</h3>
+                <span className="mb-4 grid size-10 place-items-center rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600">
+                  <Icon className="size-5" aria-hidden="true" />
+                </span>
+                <h3 className="text-base font-extrabold tracking-tight text-slate-950">
+                  {title}
+                </h3>
                 <p className="mt-1.5 max-w-[42ch] text-sm leading-relaxed text-muted">
                   {text}
                 </p>
