@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Wordmark } from "@/components/brand";
+import { AboutDialog } from "@/features/landing/about-dialog";
 import { DemoButton } from "@/features/landing/demo-button";
 import { LiveBoard } from "@/features/landing/live-board";
 import { siteDescription } from "@/lib/site";
@@ -59,13 +60,8 @@ export default function Home() {
       </main>
       <footer className="landing-foot">
         <span className="muted text-sm">QueueWindow · English & বাংলা</span>
-        <p className="muted text-sm">
-          Built by Redwanul Rashik ·{" "}
-          <a className="underline underline-offset-4" href="mailto:rkrashik@gmail.com">
-            rkrashik@gmail.com
-          </a>
-        </p>
         <nav aria-label="Footer" className="flex gap-1">
+          <AboutDialog />
           <Link className="key key-quiet key-sm" href="/login">
             Log in
           </Link>

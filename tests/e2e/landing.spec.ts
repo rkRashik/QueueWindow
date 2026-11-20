@@ -10,12 +10,38 @@ test("the laptop hero shows the live board and one clear path", async ({ page })
   await expect(main.getByRole("button", { name: "Open live demo" })).toBeInViewport();
   await expect(page.getByRole("link", { name: "Create workspace" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Log in" }).first()).toBeVisible();
-  await expect(page.getByRole("contentinfo")).toContainText("Built by Redwanul Rashik");
-  await expect(page.getByRole("link", { name: "rkrashik@gmail.com" })).toHaveAttribute(
-    "href", "mailto:rkrashik@gmail.com",
-  );
   // Free product: no trial or paywall copy anywhere on the page.
   await expect(page.locator("body")).not.toContainText(/trial|upgrade|pricing/i);
+});
+
+test("the footer About dialog exposes contact links and returns focus on close", async ({ page }) => {
+  await page.goto("/");
+  const about = page.getByRole("contentinfo").getByRole("button", { name: "About", exact: true });
+  const dialog = page.getByRole("dialog", { name: "About QueueWindow" });
+  const close = dialog.getByRole("button", { name: "Close" });
+
+  await expect(page.getByRole("link", { name: "rkrashik@gmail.com" })).toBeHidden();
+  await about.focus();
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeVisible();
+  await expect(close).toBeFocused();
+  await expect(dialog).toContainText("Built by Redwanul Rashik");
+  await expect(dialog.getByRole("link", { name: "rkrashik@gmail.com" })).toHaveAttribute(
+    "href", "mailto:rkrashik@gmail.com",
+  );
+  await expect(dialog.getByRole("link", { name: "GitHub repository" })).toHaveAttribute(
+    "href", "https://github.com/rkRashik/QueueWindow",
+  );
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(about).toBeFocused();
+
+  await about.click();
+  await expect(dialog).toBeVisible();
+  await page.mouse.click(8, 8);
+  await expect(dialog).toBeHidden();
+  await expect(about).toBeFocused();
 });
 
 test("a failed demo request explains itself without breaking a 320px layout", async ({ page }) => {

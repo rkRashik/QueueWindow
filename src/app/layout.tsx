@@ -4,6 +4,7 @@ import {
   Atkinson_Hyperlegible_Next,
   Barlow_Semi_Condensed,
 } from "next/font/google";
+import { Analytics } from "@/components/analytics";
 import { siteDescription, siteName, siteTitle, siteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -60,6 +61,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           Skip to content
         </a>
         {children}
+        <Analytics />
       </body>
     </html>
   );
