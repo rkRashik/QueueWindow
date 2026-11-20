@@ -7,7 +7,7 @@ import { LiveBoard } from "@/features/landing/live-board";
 import { siteDescription } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Service queues for desks, boards and phones",
+  title: { absolute: "QueueWindow — Live Queue & Token Display" },
   description: siteDescription,
   alternates: { canonical: "/" },
 };
